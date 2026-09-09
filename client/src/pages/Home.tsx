@@ -1,25 +1,29 @@
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { Streamdown } from 'streamdown';
+import { useState } from "react";
+import { Navbar } from "@/components/Navbar";
+import { Hero } from "@/components/Hero";
+import { Categories } from "@/components/Categories";
+import { ProductGrid } from "@/components/ProductGrid";
+import { TrustSection } from "@/components/TrustSection";
+import { SellerForm } from "@/components/SellerForm";
+import { Footer } from "@/components/Footer";
 
-/**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Best Practices, Design Guide and Common Pitfalls
- */
 export default function Home() {
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
+    <div className="min-h-screen flex flex-col w-full font-sans bg-white overflow-x-hidden">
+      <Navbar />
+      <main className="flex-grow">
+        <Hero />
+        <Categories
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+        />
+        <ProductGrid selectedCategory={selectedCategory} />
+        <TrustSection />
+        <SellerForm />
       </main>
+      <Footer />
     </div>
   );
 }
