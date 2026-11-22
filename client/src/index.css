@@ -266,6 +266,12 @@
   }
 }
 
+@layer components {
+  .input {
+    @apply mt-2 h-12 w-full rounded-xl border border-gray-200 bg-gray-50/70 px-4 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10;
+  }
+}
+
 /**
  * Using the elevate system.
  * Automatic contrast adjustment.

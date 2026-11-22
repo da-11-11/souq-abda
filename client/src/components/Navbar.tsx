@@ -41,6 +41,12 @@ export function Navbar() {
 
         {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3">
+          <Button asChild variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5">
+            <Link href="/seller-login">دخول البائع</Link>
+          </Button>
+          <Button asChild variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5">
+            <Link href="/add-product">أضف منتجك</Link>
+          </Button>
           <Button 
             onClick={scrollToSellerForm}
             className="rounded-full bg-gradient-to-r from-secondary to-primary text-white font-medium px-6 py-5 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:-translate-y-0.5"
@@ -71,6 +77,12 @@ export function Navbar() {
               className="w-full bg-gray-50 border border-gray-200 rounded-full py-3 pr-12 pl-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
+          <Button asChild variant="outline" className="w-full rounded-full border-primary/30 py-6 text-lg text-primary">
+            <Link href="/seller-login" onClick={() => setIsMenuOpen(false)}>دخول البائع</Link>
+          </Button>
+          <Button asChild variant="outline" className="w-full rounded-full border-primary/30 py-6 text-lg text-primary">
+            <Link href="/add-product" onClick={() => setIsMenuOpen(false)}>أضف منتجك</Link>
+          </Button>
           <Button 
             onClick={scrollToSellerForm}
             className="w-full rounded-full bg-gradient-to-r from-secondary to-primary text-white font-medium py-6 text-lg mt-2"
