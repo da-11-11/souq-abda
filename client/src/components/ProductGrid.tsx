@@ -1,7 +1,51 @@
-import { useEffect,useMemo,useState } from "react";
-import { categories,products,type Product } from "@/data";
-import { getProducts } from "@/lib/localStore";
+import { useMemo, useState } from "react";
+import { categories, products, type Product } from "@/data";
 import { ProductModal } from "@/components/ProductModal";
 import { motion } from "framer-motion";
-import { Crown,Heart,PackageSearch } from "lucide-react";
-export function ProductGrid({selectedCategory}:{selectedCategory:string|null}){const [selected,setSelected]=useState<Product|null>(null);const [favorites,setFavorites]=useState<string[]>([]);const [localProducts,setLocalProducts]=useState<Product[]>([]);useEffect(()=>{setLocalProducts(getProducts())},[]);const all=useMemo(()=>[...localProducts,...products],[localProducts]);const filtered=useMemo(()=>selectedCategory?all.filter(p=>p.category===selectedCategory):all,[all,selectedCategory]);const category=selectedCategory?categories.find(c=>c.id===selectedCategory):null;return <section id="featured-products" className="bg-white py-20 md:py-28"><div className="container mx-auto px-4 md:px-6"><div className="mb-12"><p className="mb-4 text-sm font-bold text-primary">مختارات صُنّاعنا</p><h2 className="text-3xl font-black md:text-5xl">{category?`إبداعات ${category.label}`:"أشياء جميلة، صنعت بحب"}</h2><p className="mt-4 text-lg text-gray-500">مجموعة مختارة من المنتجات اليدوية المصنوعة بشغف وإتقان من حرفيين أردنيين.</p></div>{filtered.length===0?<div className="flex flex-col items-center gap-4 py-20 text-gray-400"><PackageSearch className="h-12 w-12"/>لا توجد منتجات في هذه الفئة حالياً</div>:<div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">{filtered.map((product,index)=>{const favorite=favorites.includes(product.id);return <motion.article key={product.id} initial={{opacity:0,y:16}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:index*.06}} onClick={()=>setSelected(product)} className="group cursor-pointer overflow-hidden rounded-[1.75rem] border border-gray-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"><div className="relative aspect-[4/3] overflow-hidden bg-orange-50"><img src={product.image} alt={product.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-105"/>{product.isVIP&&<span className="absolute right-4 top-4 rounded-full bg-[#ffb300] px-3 py-1 text-xs font-black"><Crown className="inline h-3 w-3"/> مميز</span>}<button type="button" aria-label="المفضلة" onClick={e=>{e.stopPropagation();setFavorites(current=>favorite?current.filter(id=>id!==product.id):[...current,product.id])}} className={`absolute left-4 top-4 rounded-full p-2.5 ${favorite?"bg-red-500 text-white":"bg-white/90 text-gray-500"}`}><Heart className={`h-5 w-5 ${favorite?"fill-current":""}`}/></button></div><div className="flex min-h-[210px] flex-col p-5"><div className="mb-3 flex justify-between gap-3"><span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-primary">{product.seller}</span><b>{product.price}</b></div><h3 className="text-xl font-black group-hover:text-primary">{product.name}</h3><p className="mt-2 flex-1 text-sm leading-7 text-gray-500">{product.shortDescription}</p><div className="border-t pt-4 text-sm font-bold text-primary">عرض التفاصيل ←</div></div></motion.article>})}</div>}<ProductModal product={selected} isOpen={!!selected} onClose={()=>setSelected(null)}/></div></section>}
+import { Crown, Heart, PackageSearch } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+
+export function ProductGrid({ selectedCategory }: { selectedCategory: string | null }) {
+  const [selected, setSelected] = useState<Product | null>(null);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const { data: storedProducts = [], isLoading } = trpc.catalog.list.useQuery();
+  const all = useMemo(() => [...storedProducts, ...products], [storedProducts]);
+  const filtered = useMemo(
+    () => selectedCategory ? all.filter((product) => product.category === selectedCategory) : all,
+    [all, selectedCategory],
+  );
+  const category = selectedCategory ? categories.find((item) => item.id === selectedCategory) : null;
+
+  return (
+    <section id="featured-products" className="bg-white py-20 md:py-28">
+      <div className="container mx-auto px-4 md:px-6">
+        <div className="mb-12">
+          <p className="mb-4 text-sm font-bold text-primary">مختارات صُنّاعنا</p>
+          <h2 className="text-3xl font-black md:text-5xl">{category ? `إبداعات ${category.label}` : "أشياء جميلة، صنعت بحب"}</h2>
+          <p className="mt-4 text-lg text-gray-500">مجموعة مختارة من المنتجات اليدوية المصنوعة بشغف وإتقان من حرفيين أردنيين.</p>
+        </div>
+        {isLoading && <div className="py-12 text-center text-gray-400">جارٍ تحميل أحدث المنتجات...</div>}
+        {!isLoading && filtered.length === 0 && <div className="flex flex-col items-center gap-4 py-20 text-gray-400"><PackageSearch className="h-12 w-12" />لا توجد منتجات في هذه الفئة حالياً</div>}
+        {!isLoading && filtered.length > 0 && <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((product, index) => {
+            const favorite = favorites.includes(product.id);
+            return <motion.article key={product.id} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.06 }} onClick={() => setSelected(product)} className="group cursor-pointer overflow-hidden rounded-[1.75rem] border border-gray-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+              <div className="relative aspect-[4/3] overflow-hidden bg-orange-50">
+                <img src={product.image} alt={product.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+                {product.isVIP && <span className="absolute right-4 top-4 rounded-full bg-[#ffb300] px-3 py-1 text-xs font-black"><Crown className="inline h-3 w-3" /> مميز</span>}
+                <button type="button" aria-label="المفضلة" onClick={(event) => { event.stopPropagation(); setFavorites((current) => favorite ? current.filter((id) => id !== product.id) : [...current, product.id]); }} className={`absolute left-4 top-4 rounded-full p-2.5 ${favorite ? "bg-red-500 text-white" : "bg-white/90 text-gray-500"}`}><Heart className={`h-5 w-5 ${favorite ? "fill-current" : ""}`} /></button>
+              </div>
+              <div className="flex min-h-[210px] flex-col p-5">
+                <div className="mb-3 flex justify-between gap-3"><span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-primary">{product.seller}</span><b>{product.price}</b></div>
+                <h3 className="text-xl font-black group-hover:text-primary">{product.name}</h3>
+                <p className="mt-2 flex-1 text-sm leading-7 text-gray-500">{product.shortDescription}</p>
+                <div className="border-t pt-4 text-sm font-bold text-primary">عرض التفاصيل ←</div>
+              </div>
+            </motion.article>;
+          })}
+        </div>}
+        <ProductModal product={selected} isOpen={!!selected} onClose={() => setSelected(null)} />
+      </div>
+    </section>
+  );
+}

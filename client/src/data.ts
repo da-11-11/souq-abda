@@ -14,7 +14,7 @@ export type Product = {
 };
 
 export const assets = {
-  hero: "/images/hero-souk.jpg",
+  hero: "/manus-storage/hero-souk_8a8e0cb2.jpg",
 };
 
 export const categories = [
@@ -35,7 +35,7 @@ export const products: Product[] = [
     seller: "مخبز السعادة",
     sellerPhone: "962790000000",
     category: "food",
-    image: "/images/product-cake.jpg",
+    image: "/manus-storage/product-cake_86aef5c9.jpg",
     isVIP: true,
   },
   {
@@ -47,7 +47,7 @@ export const products: Product[] = [
     seller: "لمسة نور",
     sellerPhone: "962790000001",
     category: "decor",
-    image: "/images/product-candle.jpg",
+    image: "/manus-storage/product-candle_051920d0.jpg",
     isVIP: true,
   },
   {
@@ -59,7 +59,7 @@ export const products: Product[] = [
     seller: "خيط وحكاية",
     sellerPhone: "962790000002",
     category: "crochet",
-    image: "/images/product-crochet.jpg",
+    image: "/manus-storage/product-crochet_b42283f6.jpg",
   },
   {
     id: "embroidery-1",
@@ -70,7 +70,7 @@ export const products: Product[] = [
     seller: "إبرة وحنين",
     sellerPhone: "962790000003",
     category: "decor",
-    image: "/images/product-embroidery.jpg",
+    image: "/manus-storage/product-embroidery_6680b238.jpg",
     isVIP: true,
   },
   {
@@ -82,7 +82,7 @@ export const products: Product[] = [
     seller: "هدية من القلب",
     sellerPhone: "962790000004",
     category: "gifts",
-    image: "/images/product-giftbox.jpg",
+    image: "/manus-storage/product-giftbox_dac71a12.jpg",
   },
   {
     id: "jewelry-1",
@@ -93,7 +93,7 @@ export const products: Product[] = [
     seller: "تفاصيل ذهبية",
     sellerPhone: "962790000005",
     category: "accessories",
-    image: "/images/product-jewelry.jpg",
+    image: "/manus-storage/product-jewelry_0a06dea5.jpg",
     isVIP: true,
   },
 ];

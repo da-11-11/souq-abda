@@ -10,32 +10,35 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Store, CheckCircle2, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
+import { trpc } from "@/lib/trpc";
 
 type SellerApplication = z.infer<typeof formSchema>;
 const formSchema = z.object({
   fullName: z.string().min(2, "الاسم الكامل مطلوب"),
   projectName: z.string().min(2, "اسم المشروع مطلوب"),
-  whatsapp: z.string().min(10, "رقم الواتساب غير صحيح"),
+  whatsapp: z.string().min(8, "رقم الواتساب غير صحيح"),
   category: z.string().min(1, "يرجى اختيار فئة"),
   description: z.string().min(10, "الوصف يجب أن يكون 10 أحرف على الأقل"),
 });
 
 export function SellerForm() {
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [isSending, setIsSending] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const form = useForm<SellerApplication>({
     resolver: zodResolver(formSchema),
     defaultValues: { fullName: "", projectName: "", whatsapp: "", category: "", description: "" },
   });
+  const applyMutation = trpc.seller.submitApplication.useMutation();
 
-  const onSubmit = (values: SellerApplication) => {
-    setIsSending(true);
-    window.setTimeout(() => {
-      console.info("Seller application captured locally", values);
-      setIsSending(false);
+  const onSubmit = async (values: SellerApplication) => {
+    setSubmitError("");
+    try {
+      await applyMutation.mutateAsync(values);
       setIsSubmitted(true);
       form.reset();
-    }, 650);
+    } catch {
+      setSubmitError("تعذر إرسال الطلب الآن. حاول مرة أخرى بعد قليل.");
+    }
   };
 
   return (
@@ -51,7 +54,7 @@ export function SellerForm() {
               <p className="mt-5 text-lg leading-8 text-white/80">شارك إبداعك مع مشترين يبحثون عن القطع الأصيلة، وابدأ حضورك في سوق أبدع.</p>
             </div>
             <div className="mt-10 space-y-4 text-sm font-bold text-white/90">
-              {['متجر مستقل باسمك', 'تواصل مباشر مع المشترين', 'دعم وتسويق لحرفتك'].map((item) => <div key={item} className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-[#ffe29a]" />{item}</div>)}
+              {["متجر مستقل باسمك", "تواصل مباشر مع المشترين", "دعم وتسويق لحرفتك"].map((item) => <div key={item} className="flex items-center gap-3"><CheckCircle2 className="h-5 w-5 shrink-0 text-[#ffe29a]" />{item}</div>)}
             </div>
           </div>
 
@@ -60,7 +63,7 @@ export function SellerForm() {
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex min-h-[410px] flex-col items-center justify-center text-center">
                 <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-green-600"><CheckCircle2 className="h-10 w-10" /></div>
                 <h3 className="text-2xl font-black text-gray-950">وصلنا طلبك بنجاح</h3>
-                <p className="mt-3 max-w-sm leading-8 text-gray-500">شكراً لثقتك. سيقوم فريقنا بمراجعة البيانات والتواصل معك قريباً.</p>
+                <p className="mt-3 max-w-sm leading-8 text-gray-500">تم حفظ طلبك في قاعدة البيانات. سيقوم فريقنا بمراجعة البيانات والتواصل معك قريباً.</p>
                 <Button onClick={() => setIsSubmitted(false)} variant="outline" className="mt-7 rounded-full border-primary/30 px-6 text-primary">إرسال طلب آخر <ArrowLeft className="mr-2 h-4 w-4" /></Button>
               </motion.div>
             ) : (
@@ -76,7 +79,8 @@ export function SellerForm() {
                     <FormField control={form.control} name="category" render={({ field }) => <FormItem><FormLabel>الفئة</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="h-12 rounded-xl bg-gray-50/70"><SelectValue placeholder="اختر الفئة..." /></SelectTrigger></FormControl><SelectContent>{categories.map((category) => <SelectItem key={category.id} value={category.id}>{category.label}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
                   </div>
                   <FormField control={form.control} name="description" render={({ field }) => <FormItem><FormLabel>وصف مشروعك</FormLabel><FormControl><Textarea placeholder="حدثنا باختصار عن المنتجات التي تصنعها..." className="h-28 resize-none rounded-xl bg-gray-50/70" {...field} /></FormControl><FormMessage /></FormItem>} />
-                  <Button type="submit" disabled={isSending} className="mt-2 h-14 w-full rounded-xl bg-gradient-to-l from-[#dd6b20] to-[#f59e0b] text-lg font-black text-white shadow-lg shadow-orange-500/20 transition-transform hover:-translate-y-0.5">{isSending ? "جارٍ الإرسال..." : "أرسل طلبك الآن"}</Button>
+                  {submitError && <p className="rounded-xl bg-red-50 px-4 py-3 text-center text-sm text-red-600">{submitError}</p>}
+                  <Button type="submit" disabled={applyMutation.isPending} className="mt-2 h-14 w-full rounded-xl bg-gradient-to-l from-[#dd6b20] to-[#f59e0b] text-lg font-black text-white shadow-lg shadow-orange-500/20 transition-transform hover:-translate-y-0.5">{applyMutation.isPending ? "جارٍ الحفظ في قاعدة البيانات..." : "أرسل طلبك الآن"}</Button>
                 </form>
               </Form>
             )}
