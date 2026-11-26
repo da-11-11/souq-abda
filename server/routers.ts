@@ -8,14 +8,18 @@ import { publicProcedure, router } from "./_core/trpc";
 import { storagePut, storagePutReceipt, validateReceiptUpload } from "./storage";
 import {
   createMediaFile,
+  createDirectFreeTrial,
   createProduct,
   createSellerApplication,
   decideSellerApplication,
+  getActiveFreeTrialCount,
   getActiveSellerCount,
+  getPlatformSettings,
   getSellerApplicationById,
   getSellerApplicationByToken,
   listProducts,
   listSellerApplications,
+  updatePlatformSettings,
   updateSellerApplicationProfile,
 } from "./db";
 
@@ -28,7 +32,7 @@ const applicationInput = z.object({
   whatsapp: z.string().trim().min(8).max(32),
   category: z.string().trim().min(1).max(64),
   description: z.string().trim().min(10).max(5000),
-  planType: z.enum(["monthly", "yearly"]).default("monthly"),
+  planType: z.enum(["free_trial", "monthly", "yearly"]).default("monthly"),
   senderAccountName: z.string().trim().min(2).max(160).optional(),
   referenceNumber: z.string().trim().max(120).optional(),
   receiptData: z.string().min(20).max(15_000_000).optional(),
@@ -86,10 +90,26 @@ export const appRouter = router({
     }),
   }),
   catalog: router({ list: publicProcedure.query(() => listProducts()) }),
+  trial: router({
+    getTrialStatus: publicProcedure.query(async () => {
+      const settings = await getPlatformSettings();
+      const used = await getActiveFreeTrialCount();
+      const max = settings?.maxFreeTrials ?? 30;
+      return { used, max, remaining: Math.max(0, max - used), isOpen: Boolean(settings?.isFreeTrialOpen && used < max) };
+    }),
+  }),
   seller: router({
     submitApplication: publicProcedure.input(applicationInput).mutation(async ({ input }) => {
+      const isFreeTrial = input.planType === "free_trial";
+      if (isFreeTrial) {
+        const settings = await getPlatformSettings();
+        const used = await getActiveFreeTrialCount();
+        if (!settings?.isFreeTrialOpen || used >= (settings?.maxFreeTrials ?? 30)) {
+          throw new TRPCError({ code: "PRECONDITION_FAILED", message: "اكتملت المقاعد المجانية أو تم إغلاق التسجيل حالياً" });
+        }
+      }
       let receiptUrl: string | undefined;
-      if (input.receiptData) {
+      if (!isFreeTrial && input.receiptData) {
         const parsed = parseBase64Data(input.receiptData);
         const mimeType = input.receiptMimeType || parsed.mimeType;
         if (mimeType !== parsed.mimeType && parsed.mimeType) throw new TRPCError({ code: "BAD_REQUEST", message: "نوع ملف الإيصال غير مطابق" });
@@ -112,6 +132,7 @@ export const appRouter = router({
         receiptUrl: receiptUrl ?? "",
         senderAccountName: input.senderAccountName || input.fullName,
         referenceNumber: input.referenceNumber,
+        trialEndsAt: isFreeTrial ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : undefined,
       });
     }),
     login: publicProcedure.input(z.object({ accessToken: z.string().trim().min(4).max(32) })).query(async ({ input }) => {
@@ -151,16 +172,44 @@ export const appRouter = router({
       requireAdmin(input.password);
       return listSellerApplications();
     }),
+    trialSettings: publicProcedure.input(z.object({ password: z.string() })).query(async ({ input }) => {
+      requireAdmin(input.password);
+      const settings = await getPlatformSettings();
+      return { ...settings, used: await getActiveFreeTrialCount() };
+    }),
+    updateTrialSettings: publicProcedure.input(z.object({ password: z.string(), maxFreeTrials: z.number().int().min(0).max(10000).optional(), isFreeTrialOpen: z.boolean().optional() })).mutation(async ({ input }) => {
+      requireAdmin(input.password);
+      if (input.maxFreeTrials !== undefined) {
+        const used = await getActiveFreeTrialCount();
+        if (input.maxFreeTrials < used) throw new TRPCError({ code: "BAD_REQUEST", message: `لا يمكن ضبط الحد الأقصى أقل من المقاعد المستخدمة (${used})` });
+      }
+      const { password: _password, ...changes } = input;
+      return updatePlatformSettings(changes);
+    }),
+    grantFreeTrial: publicProcedure.input(z.object({ password: z.string(), projectName: z.string().trim().min(2).max(160), whatsapp: z.string().trim().min(8).max(32) })).mutation(async ({ input }) => {
+      requireAdmin(input.password);
+      const settings = await getPlatformSettings();
+      const used = await getActiveFreeTrialCount();
+      if (used >= (settings?.maxFreeTrials ?? 30)) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "لا توجد مقاعد مجانية متاحة" });
+      const accessToken = makeAccessToken();
+      return createDirectFreeTrial({ projectName: input.projectName, whatsapp: input.whatsapp, accessToken, trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
+    }),
     decideApplication: publicProcedure.input(z.object({ password: z.string(), id: z.number().int().positive(), status: z.enum(["approved", "rejected"]) })).mutation(async ({ input }) => {
       requireAdmin(input.password);
       const current = await getSellerApplicationById(input.id);
       if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "طلب البائع غير موجود" });
       if (input.status === "approved" && current.status !== "approved") {
-        const activeCount = await getActiveSellerCount();
-        if (activeCount >= MAX_ACTIVE_SELLERS) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "تم بلوغ الحد الأقصى: 30 متجراً نشطاً" });
-        if (!current.receiptUrl || !current.senderAccountName) throw new TRPCError({ code: "BAD_REQUEST", message: "لا يمكن التفعيل دون إيصال واسم صاحب الحساب" });
+        if (current.planType === "free_trial") {
+          const settings = await getPlatformSettings();
+          const used = await getActiveFreeTrialCount();
+          if (used >= (settings?.maxFreeTrials ?? 30)) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "تم بلوغ الحد الأقصى للمقاعد المجانية" });
+        } else {
+          const activeCount = await getActiveSellerCount();
+          if (activeCount >= MAX_ACTIVE_SELLERS) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "تم بلوغ الحد الأقصى: 30 متجراً نشطاً" });
+          if (!current.receiptUrl || !current.senderAccountName) throw new TRPCError({ code: "BAD_REQUEST", message: "لا يمكن التفعيل دون إيصال واسم صاحب الحساب" });
+        }
       }
-      return decideSellerApplication(input.id, input.status, input.status === "approved" ? makeAccessToken() : undefined);
+      return decideSellerApplication(input.id, input.status, input.status === "approved" ? makeAccessToken() : undefined, input.status === "approved" && current.planType === "free_trial" ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : undefined);
     }),
   }),
 });

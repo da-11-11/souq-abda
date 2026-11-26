@@ -1,8 +1,9 @@
-import { count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   type InsertUser,
   mediaFiles,
+  platformSettings,
   products,
   sellerApplications,
   type User,
@@ -77,10 +78,11 @@ export async function createSellerApplication(input: {
   whatsapp: string;
   category: string;
   description: string;
-  planType: "monthly" | "yearly";
+  planType: "free_trial" | "monthly" | "yearly";
   receiptUrl: string;
   senderAccountName: string;
   referenceNumber?: string;
+  trialEndsAt?: Date;
 }) {
   const db = await requireDb();
   const result = await db.insert(sellerApplications).values({
@@ -88,6 +90,51 @@ export async function createSellerApplication(input: {
     referenceNumber: input.referenceNumber || null,
   });
   return Number((result as unknown as [{ insertId: number }])[0]?.insertId);
+}
+
+const DEFAULT_SETTINGS_ID = 1;
+
+export async function getPlatformSettings() {
+  const db = await requireDb();
+  const existing = await db.select().from(platformSettings).where(eq(platformSettings.id, DEFAULT_SETTINGS_ID)).limit(1);
+  if (existing[0]) return existing[0];
+  await db.insert(platformSettings).values({ id: DEFAULT_SETTINGS_ID, maxFreeTrials: 30, isFreeTrialOpen: true });
+  const created = await db.select().from(platformSettings).where(eq(platformSettings.id, DEFAULT_SETTINGS_ID)).limit(1);
+  return created[0];
+}
+
+export async function updatePlatformSettings(input: { maxFreeTrials?: number; isFreeTrialOpen?: boolean }) {
+  const db = await requireDb();
+  await getPlatformSettings();
+  await db.update(platformSettings).set(input).where(eq(platformSettings.id, DEFAULT_SETTINGS_ID));
+  return getPlatformSettings();
+}
+
+export async function getActiveFreeTrialCount() {
+  const db = await requireDb();
+  const result = await db
+    .select({ value: count() })
+    .from(sellerApplications)
+    .where(and(eq(sellerApplications.status, "approved"), eq(sellerApplications.planType, "free_trial"), gt(sellerApplications.trialEndsAt, new Date())));
+  return Number(result[0]?.value ?? 0);
+}
+
+export async function createDirectFreeTrial(input: { projectName: string; whatsapp: string; accessToken: string; trialEndsAt: Date }) {
+  const db = await requireDb();
+  const result = await db.insert(sellerApplications).values({
+    fullName: input.projectName,
+    projectName: input.projectName,
+    whatsapp: input.whatsapp,
+    category: "other",
+    description: "تجربة مجانية ممنوحة مباشرة من الإدارة",
+    planType: "free_trial",
+    receiptUrl: "",
+    senderAccountName: "تجربة مجانية",
+    trialEndsAt: input.trialEndsAt,
+    status: "approved",
+    accessToken: input.accessToken,
+  });
+  return getSellerApplicationById(Number((result as unknown as [{ insertId: number }])[0]?.insertId));
 }
 
 export async function listSellerApplications() {
@@ -107,9 +154,9 @@ export async function getActiveSellerCount() {
   return Number(result[0]?.value ?? 0);
 }
 
-export async function decideSellerApplication(id: number, status: "approved" | "rejected", accessToken?: string) {
+export async function decideSellerApplication(id: number, status: "approved" | "rejected", accessToken?: string, trialEndsAt?: Date) {
   const db = await requireDb();
-  await db.update(sellerApplications).set({ status, accessToken: status === "approved" ? accessToken ?? null : null }).where(eq(sellerApplications.id, id));
+  await db.update(sellerApplications).set({ status, accessToken: status === "approved" ? accessToken ?? null : null, trialEndsAt: status === "approved" ? trialEndsAt ?? null : null }).where(eq(sellerApplications.id, id));
   return getSellerApplicationById(id);
 }
 

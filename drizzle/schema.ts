@@ -20,6 +20,14 @@ export const users = mysqlTable("users", {
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
+export const platformSettings = mysqlTable("platform_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  maxFreeTrials: int("maxFreeTrials").default(30).notNull(),
+  isFreeTrialOpen: boolean("isFreeTrialOpen").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export const sellerApplications = mysqlTable("seller_applications", {
   id: int("id").autoincrement().primaryKey(),
   fullName: varchar("fullName", { length: 160 }).notNull(),
@@ -27,10 +35,11 @@ export const sellerApplications = mysqlTable("seller_applications", {
   whatsapp: varchar("whatsapp", { length: 32 }).notNull(),
   category: varchar("category", { length: 64 }).notNull(),
   description: text("description").notNull(),
-  planType: mysqlEnum("planType", ["monthly", "yearly"]).default("monthly").notNull(),
+  planType: mysqlEnum("planType", ["free_trial", "monthly", "yearly"]).default("monthly").notNull(),
   receiptUrl: text("receiptUrl").notNull(),
   senderAccountName: varchar("senderAccountName", { length: 160 }).notNull(),
   referenceNumber: varchar("referenceNumber", { length: 120 }),
+  trialEndsAt: timestamp("trialEndsAt"),
   status: mysqlEnum("status", ["pending", "approved", "rejected"])
     .default("pending")
     .notNull(),
@@ -69,6 +78,8 @@ export const mediaFiles = mysqlTable("media_files", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+export type PlatformSetting = typeof platformSettings.$inferSelect;
+export type InsertPlatformSetting = typeof platformSettings.$inferInsert;
 export type SellerApplication = typeof sellerApplications.$inferSelect;
 export type InsertSellerApplication = typeof sellerApplications.$inferInsert;
 export type Product = typeof products.$inferSelect;
