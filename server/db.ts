@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   type InsertUser,
@@ -77,9 +77,16 @@ export async function createSellerApplication(input: {
   whatsapp: string;
   category: string;
   description: string;
+  planType: "monthly" | "yearly";
+  receiptUrl: string;
+  senderAccountName: string;
+  referenceNumber?: string;
 }) {
   const db = await requireDb();
-  const result = await db.insert(sellerApplications).values(input);
+  const result = await db.insert(sellerApplications).values({
+    ...input,
+    referenceNumber: input.referenceNumber || null,
+  });
   return Number((result as unknown as [{ insertId: number }])[0]?.insertId);
 }
 
@@ -92,6 +99,12 @@ export async function getSellerApplicationByToken(accessToken: string) {
   const db = await requireDb();
   const result = await db.select().from(sellerApplications).where(eq(sellerApplications.accessToken, accessToken)).limit(1);
   return result[0];
+}
+
+export async function getActiveSellerCount() {
+  const db = await requireDb();
+  const result = await db.select({ value: count() }).from(sellerApplications).where(eq(sellerApplications.status, "approved"));
+  return Number(result[0]?.value ?? 0);
 }
 
 export async function decideSellerApplication(id: number, status: "approved" | "rejected", accessToken?: string) {

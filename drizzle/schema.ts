@@ -27,6 +27,10 @@ export const sellerApplications = mysqlTable("seller_applications", {
   whatsapp: varchar("whatsapp", { length: 32 }).notNull(),
   category: varchar("category", { length: 64 }).notNull(),
   description: text("description").notNull(),
+  planType: mysqlEnum("planType", ["monthly", "yearly"]).default("monthly").notNull(),
+  receiptUrl: text("receiptUrl").notNull(),
+  senderAccountName: varchar("senderAccountName", { length: 160 }).notNull(),
+  referenceNumber: varchar("referenceNumber", { length: 120 }),
   status: mysqlEnum("status", ["pending", "approved", "rejected"])
     .default("pending")
     .notNull(),
