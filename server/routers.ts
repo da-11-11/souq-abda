@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
+import { formatJordanWhatsappNumber } from "../shared/phone";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -32,6 +33,8 @@ import {
   updateSellerApplicationProfile,
   setProductFeatured,
   deleteProduct,
+  updateSellerProduct,
+  deleteSellerProduct,
   renewSeller,
   setSellerSuspended,
 } from "./db";
@@ -161,7 +164,7 @@ export const appRouter = router({
         userEmail: ctx.user?.email ?? undefined,
         fullName: input.fullName,
         projectName: input.projectName,
-        whatsapp: input.whatsapp?.trim() || undefined,
+        whatsapp: formatJordanWhatsappNumber(input.whatsapp) ?? undefined,
         socialUrl: input.socialUrl?.trim() || undefined,
         category: input.category,
         description: input.description,
@@ -196,7 +199,7 @@ export const appRouter = router({
       if (!seller || seller.status !== "approved") throw new TRPCError({ code: "UNAUTHORIZED", message: "انتهت صلاحية جلسة البائع" });
       if (!canManageSeller(ctx.user, seller)) throw new TRPCError({ code: "FORBIDDEN", message: "لا تملك صلاحية إدارة هذا المتجر" });
       if (!input.whatsapp?.trim() && !input.socialUrl?.trim()) throw new TRPCError({ code: "BAD_REQUEST", message: "يرجى إدخال رقم واتساب أو رابط حساب إنستغرام/فيسبوك للتواصل" });
-      return updateSellerApplicationProfile({ id: seller.id, projectName: input.projectName, whatsapp: input.whatsapp?.trim() || undefined, socialUrl: input.socialUrl?.trim() || undefined, category: input.category, description: input.description });
+      return updateSellerApplicationProfile({ id: seller.id, projectName: input.projectName, whatsapp: formatJordanWhatsappNumber(input.whatsapp) ?? undefined, socialUrl: input.socialUrl?.trim() || undefined, category: input.category, description: input.description });
     }),
     createProduct: protectedProcedure.input(productInput).mutation(async ({ input, ctx }) => {
       const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
@@ -221,6 +224,29 @@ export const appRouter = router({
       const productId = await createProduct({ sellerApplicationId: seller.id, name: input.name, shortDescription: input.shortDescription, description: input.description, price: input.price, seller: seller.projectName, sellerPhone: seller.whatsapp ?? undefined, category: input.category, imageUrl, imageKey });
       if (uploadedFile && imageKey) await createMediaFile({ productId, storageKey: imageKey, url: imageUrl, ...uploadedFile });
       return { id: String(productId), imageUrl };
+    }),
+    updateProduct: protectedProcedure.input(productInput.extend({ id: z.number().int().positive() })).mutation(async ({ input, ctx }) => {
+      const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
+      if (!seller || seller.status !== "approved") throw new TRPCError({ code: "UNAUTHORIZED", message: "انتهت صلاحية جلسة البائع" });
+      if (!canManageSeller(ctx.user, seller)) throw new TRPCError({ code: "FORBIDDEN", message: "لا تملك صلاحية تعديل هذا المنتج" });
+      let imageUrl: string | undefined;
+      let imageKey: string | undefined;
+      if (input.imageData) {
+        const parsed = parseBase64Data(input.imageData);
+        const buffer = Buffer.from(parsed.base64, "base64");
+        if (!buffer.length || buffer.length > 10 * 1024 * 1024) throw new TRPCError({ code: "BAD_REQUEST", message: "حجم الصورة يجب أن يكون أقل من 10 ميغابايت" });
+        const safeName = (input.imageFileName || "product.jpg").replace(/[^a-z0-9._-]/gi, "-");
+        const uploaded = await storagePut(`products/${seller.id}/${Date.now()}-${safeName}`, buffer, input.imageMimeType || parsed.mimeType);
+        imageUrl = uploaded.url;
+        imageKey = uploaded.key;
+      }
+      return updateSellerProduct({ id: input.id, sellerApplicationId: seller.id, name: input.name, shortDescription: input.shortDescription, description: input.description, price: input.price, category: input.category, imageUrl, imageKey });
+    }),
+    deleteProduct: protectedProcedure.input(z.object({ accessToken: z.string().trim().min(4).max(32), id: z.number().int().positive() })).mutation(async ({ input, ctx }) => {
+      const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
+      if (!seller || seller.status !== "approved") throw new TRPCError({ code: "UNAUTHORIZED", message: "انتهت صلاحية جلسة البائع" });
+      if (!canManageSeller(ctx.user, seller)) throw new TRPCError({ code: "FORBIDDEN", message: "لا تملك صلاحية حذف هذا المنتج" });
+      return deleteSellerProduct(input.id, seller.id);
     }),
     likeProduct: publicProcedure.input(z.object({ productId: z.number().int().positive() })).mutation(({ input }) => incrementProductMetric(input.productId, "likesCount")),
     trackWhatsappClick: publicProcedure.input(z.object({ productId: z.number().int().positive() })).mutation(({ input }) => incrementProductMetric(input.productId, "whatsappClicks")),

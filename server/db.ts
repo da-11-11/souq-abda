@@ -11,6 +11,7 @@ import {
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { formatJordanWhatsappNumber } from "../shared/phone";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -249,7 +250,7 @@ export async function listProducts() {
 
 export async function getSellerProductStats(sellerApplicationId: number) {
   const db = await requireDb();
-  const rows = await db.select({ id: products.id, whatsappClicks: products.whatsappClicks, likesCount: products.likesCount }).from(products).where(eq(products.sellerApplicationId, sellerApplicationId));
+  const rows = await db.select({ id: products.id, name: products.name, shortDescription: products.shortDescription, description: products.description, price: products.price, category: products.category, imageUrl: products.imageUrl, whatsappClicks: products.whatsappClicks, likesCount: products.likesCount }).from(products).where(eq(products.sellerApplicationId, sellerApplicationId));
   return {
     productCount: rows.length,
     whatsappClicks: rows.reduce((total, row) => total + row.whatsappClicks, 0),
@@ -321,8 +322,31 @@ export async function createProduct(input: {
   imageKey?: string;
 }) {
   const db = await requireDb();
-  const result = await db.insert(products).values(input);
+  const result = await db.insert(products).values({ ...input, sellerPhone: formatJordanWhatsappNumber(input.sellerPhone) });
   return Number((result as unknown as [{ insertId: number }])[0]?.insertId);
+}
+
+export async function updateSellerProduct(input: {
+  id: number;
+  sellerApplicationId: number;
+  name: string;
+  shortDescription: string;
+  description: string;
+  price: string;
+  category: string;
+  imageUrl?: string;
+  imageKey?: string;
+}) {
+  const db = await requireDb();
+  const changes = { name: input.name, shortDescription: input.shortDescription, description: input.description, price: input.price, category: input.category, ...(input.imageUrl ? { imageUrl: input.imageUrl, imageKey: input.imageKey } : {}) };
+  await db.update(products).set(changes).where(and(eq(products.id, input.id), eq(products.sellerApplicationId, input.sellerApplicationId)));
+  return db.select().from(products).where(and(eq(products.id, input.id), eq(products.sellerApplicationId, input.sellerApplicationId))).limit(1);
+}
+
+export async function deleteSellerProduct(id: number, sellerApplicationId: number) {
+  const db = await requireDb();
+  await db.delete(products).where(and(eq(products.id, id), eq(products.sellerApplicationId, sellerApplicationId)));
+  return { success: true };
 }
 
 export async function createMediaFile(input: {

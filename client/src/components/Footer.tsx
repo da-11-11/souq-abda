@@ -1,9 +1,10 @@
 import { Link } from "wouter";
 import { Facebook, Instagram, Mail, MessageCircle, Phone, ShoppingBag } from "lucide-react";
 import { CONTACT_EMAIL, FACEBOOK_URL, INSTAGRAM_URL, WHATSAPP_LOCAL_NUMBER, WHATSAPP_NUMBER } from "@/const";
+import { formatJordanWhatsappNumber } from "@shared/phone";
 
 const linkClass = "text-gray-600 transition-colors hover:text-primary";
-const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}`;
+const whatsappUrl = `https://wa.me/${formatJordanWhatsappNumber(WHATSAPP_NUMBER) ?? WHATSAPP_NUMBER}`;
 
 export function Footer() {
   return <footer className="border-t border-orange-100 bg-white pb-5 pt-10 md:pb-8 md:pt-16" dir="rtl">

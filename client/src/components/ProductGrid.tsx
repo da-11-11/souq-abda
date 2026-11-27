@@ -4,6 +4,7 @@ import { ProductModal } from "@/components/ProductModal";
 import { motion } from "framer-motion";
 import { Crown, Heart, PackageSearch, Search, Star } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { formatJordanWhatsappNumber, formatJordanianPrice } from "@shared/phone";
 
 type ProductMetrics = Product & { likesCount?: number; whatsappClicks?: number; isFeatured?: boolean; socialUrl?: string | null };
 
@@ -53,10 +54,12 @@ export function ProductGrid({ selectedCategory }: { selectedCategory: string | n
   };
   const openContact = (event: React.MouseEvent, product: ProductMetrics) => {
     event.stopPropagation();
-    const text = encodeURIComponent(`مرحباً، أرغب بالاستفسار عن منتج "${product.name}" من متجر ${product.seller}، وسعره ${product.price}. هل المنتج متاح؟`);
+    const displayPrice = formatJordanianPrice(product.price);
+    const text = encodeURIComponent(`مرحباً، أرغب بالاستفسار عن منتج "${product.name}" من متجر ${product.seller}، وسعره ${displayPrice}. هل المنتج متاح؟`);
     const id = Number(product.id);
     if (Number.isInteger(id) && id > 0) void clickMutation.mutateAsync({ productId: id });
-    if (product.sellerPhone) window.open(`https://wa.me/${product.sellerPhone}?text=${text}`, "_blank", "noopener,noreferrer");
+    const whatsappNumber = formatJordanWhatsappNumber(product.sellerPhone);
+    if (whatsappNumber) window.open(`https://wa.me/${whatsappNumber}?text=${text}`, "_blank", "noopener,noreferrer");
     else if (product.socialUrl) window.open(getSocialUrl(product.socialUrl), "_blank", "noopener,noreferrer");
   };
 
@@ -86,7 +89,7 @@ export function ProductGrid({ selectedCategory }: { selectedCategory: string | n
                 <button type="button" aria-label="إعجاب بالمنتج" onClick={(event) => likeProduct(event, product)} className={`absolute left-2 top-2 flex items-center gap-1 rounded-full px-1.5 py-1 text-[10px] ${favorite ? "bg-red-500 text-white" : "bg-white/90 text-gray-500"} sm:left-4 sm:top-4 sm:p-2.5 sm:text-xs`}><Heart className={`h-4 w-4 sm:h-5 sm:w-5 ${favorite ? "fill-current" : ""}`} /><span>{likes}</span></button>
               </div>
               <div className="flex min-h-[165px] flex-col p-2.5 sm:min-h-[210px] sm:p-5">
-                <div className="mb-1.5 flex items-center justify-between gap-1 sm:mb-3 sm:gap-3"><span className="max-w-[62%] truncate rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold text-primary sm:px-3 sm:py-1 sm:text-xs">{product.seller}</span><b className="shrink-0 text-xs sm:text-base">{product.price}</b></div>
+                <div className="mb-1.5 flex items-center justify-between gap-1 sm:mb-3 sm:gap-3"><span className="max-w-[62%] truncate rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold text-primary sm:px-3 sm:py-1 sm:text-xs">{product.seller}</span><b className="shrink-0 text-xs sm:text-base">{formatJordanianPrice(product.price)}</b></div>
                 <h3 className="line-clamp-2 text-sm font-black leading-5 group-hover:text-primary sm:text-xl sm:leading-normal">{product.name}</h3>
                 <p className="mt-1 line-clamp-2 flex-1 text-xs leading-5 text-gray-500 sm:mt-2 sm:text-sm sm:leading-7">{product.shortDescription}</p>
                 <div className="flex items-center justify-between border-t pt-2 text-[11px] font-bold text-primary sm:pt-4 sm:text-sm"><button type="button" onClick={(event) => openContact(event, product)} className="text-green-600">{product.sellerPhone ? "واتساب" : "اطلب عبر إنستغرام / فيسبوك"}</button><button type="button" onClick={() => setSelected(product)}>عرض التفاصيل ←</button></div>
