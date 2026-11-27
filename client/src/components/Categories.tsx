@@ -26,14 +26,14 @@ export function Categories({
   };
 
   return (
-    <section id="categories" className="py-16 bg-gray-50 overflow-hidden">
+    <section id="categories" className="overflow-hidden bg-gray-50 py-6 md:py-16">
       <div className="container mx-auto px-4 md:px-6">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900">تسوق حسب الفئة</h2>
+        <div className="mb-4 flex items-center justify-between md:mb-8">
+          <h2 className="text-xl font-bold text-gray-900 md:text-3xl">تسوق حسب الفئة</h2>
         </div>
 
         {/* Horizontal scroll container with hidden scrollbar */}
-        <div className="flex overflow-x-auto pb-6 gap-4 md:gap-6 snap-x snap-mandatory hide-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
+        <div className="-mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-3 md:mx-0 md:gap-6 md:px-0 md:pb-6">
           {/* "All" reset chip */}
           <motion.button
             type="button"
@@ -46,16 +46,16 @@ export function Categories({
             aria-pressed={selectedCategory === null}
           >
             <div
-              className={`w-32 h-32 md:w-40 md:h-40 rounded-3xl bg-gray-100 text-gray-700 border-2 flex flex-col items-center justify-center gap-3 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-lg ${
+                className={`flex h-24 w-24 flex-col items-center justify-center gap-1.5 rounded-2xl border-2 bg-gray-100 text-gray-700 transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg md:h-40 md:w-40 md:gap-3 md:rounded-3xl md:group-hover:-translate-y-2 ${
                 selectedCategory === null
                   ? "border-primary ring-2 ring-primary/30 shadow-lg bg-primary/10 text-primary"
                   : "border-gray-200"
               }`}
             >
-              <div className="p-3 bg-white/50 rounded-full group-hover:scale-110 transition-transform duration-300">
-                <LayoutGrid className="w-8 h-8 md:w-10 md:h-10" />
+              <div className="rounded-full bg-white/50 p-2 md:p-3">
+                <LayoutGrid className="h-5 w-5 md:h-10 md:w-10" />
               </div>
-              <span className="font-bold text-sm md:text-base">الكل</span>
+              <span className="text-xs font-bold md:text-base">الكل</span>
             </div>
           </motion.button>
 
@@ -75,28 +75,28 @@ export function Categories({
                 aria-pressed={isActive}
               >
                 <div
-                  className={`w-32 h-32 md:w-40 md:h-40 rounded-3xl ${category.color} border-2 flex flex-col items-center justify-center gap-3 transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-lg ${
+                  className={`flex h-24 w-24 flex-col items-center justify-center gap-1.5 rounded-2xl border-2 ${category.color} transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg md:h-40 md:w-40 md:gap-3 md:rounded-3xl md:group-hover:-translate-y-2 ${
                     isActive ? "ring-2 ring-primary border-primary shadow-lg -translate-y-2" : ""
                   }`}
                 >
-                  <div className="p-3 bg-white/50 rounded-full group-hover:scale-110 transition-transform duration-300">
-                    <Icon className="w-8 h-8 md:w-10 md:h-10" />
+                  <div className="rounded-full bg-white/50 p-2 md:p-3">
+                    <Icon className="h-5 w-5 md:h-10 md:w-10" />
                   </div>
-                  <span className="font-bold text-sm md:text-base">{category.label}</span>
+                  <span className="text-xs font-bold md:text-base">{category.label}</span>
                 </div>
               </motion.button>
             );
           })}
         </div>
-        <div className="flex flex-wrap items-center gap-2" aria-label="فلترة حسب السعر">
-          <span className="ml-2 text-sm font-bold text-gray-500">السعر بالدينار الأردني:</span>
+        <div className="flex flex-wrap items-center gap-1.5 md:gap-2" aria-label="فلترة حسب السعر">
+          <span className="ml-1 text-xs font-bold text-gray-500 md:ml-2 md:text-sm">السعر بالدينار الأردني:</span>
           {priceFilters.map((filter) => (
             <button
               key={filter.id}
               type="button"
               onClick={() => selectPrice(filter.id)}
               aria-pressed={selectedPrice === filter.id}
-              className={`rounded-full border px-4 py-2 text-sm font-bold transition ${selectedPrice === filter.id ? "border-primary bg-primary text-white shadow-md" : "border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:text-primary"}`}
+              className={`rounded-full border px-2.5 py-1 text-[11px] font-bold transition md:px-4 md:py-2 md:text-sm ${selectedPrice === filter.id ? "border-primary bg-primary text-white shadow-md" : "border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:text-primary"}`}
             >
               {filter.label}
             </button>

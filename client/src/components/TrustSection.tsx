@@ -27,20 +27,20 @@ const benefits = [
 
 export function TrustSection() {
   return (
-    <section id="trust-section" className="py-20 bg-gray-900 text-white relative overflow-hidden">
+    <section id="trust-section" className="relative overflow-hidden bg-gray-900 py-8 text-white md:py-20">
       {/* Decorative background elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+      <div className="absolute right-0 top-0 hidden h-96 w-96 -translate-y-1/2 translate-x-1/2 rounded-full bg-primary/20 blur-3xl md:block" />
+      <div className="absolute bottom-0 left-0 hidden h-96 w-96 -translate-x-1/2 translate-y-1/2 rounded-full bg-secondary/20 blur-3xl md:block" />
 
       <div className="container mx-auto px-4 md:px-6 relative z-10">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">لماذا سوق أبدع؟</h2>
-          <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+        <div className="mb-6 text-center md:mb-16">
+          <h2 className="mb-2 text-2xl font-bold md:mb-4 md:text-4xl">لماذا سوق أبدع؟</h2>
+          <p className="mx-auto max-w-2xl text-sm leading-6 text-gray-400 md:text-lg">
             نحن لسنا مجرد متجر إلكتروني، نحن مجتمع يجمع صناع الجمال بمقدري الفن الأصيل.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-12">
           {benefits.map((benefit, index) => {
             const Icon = benefit.icon;
             return (
@@ -50,13 +50,13 @@ export function TrustSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.2, duration: 0.6 }}
-                className="bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 p-8 rounded-3xl text-center hover:bg-gray-800 transition-colors"
+                className="rounded-2xl border border-gray-700/50 bg-gray-800/50 p-4 text-center backdrop-blur-sm transition-colors hover:bg-gray-800 md:rounded-3xl md:p-8"
               >
-                <div className={`w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-6 ${benefit.color} bg-opacity-20`}>
-                  <Icon className="w-8 h-8" />
+                <div className={`mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl ${benefit.color} bg-opacity-20 md:mb-6 md:h-16 md:w-16 md:rounded-2xl`}>
+                  <Icon className="h-5 w-5 md:h-8 md:w-8" />
                 </div>
-                <h3 className="text-xl font-bold mb-3">{benefit.title}</h3>
-                <p className="text-gray-400 leading-relaxed">
+                <h3 className="mb-1.5 text-base font-bold md:mb-3 md:text-xl">{benefit.title}</h3>
+                <p className="text-xs leading-5 text-gray-400 md:text-base md:leading-relaxed">
                   {benefit.description}
                 </p>
               </motion.div>

@@ -33,19 +33,19 @@ export function ProductGrid({ selectedCategory }: { selectedCategory: string | n
   const category = selectedCategory ? categories.find((item) => item.id === selectedCategory) : null;
 
   return (
-    <section id="featured-products" className="bg-white py-20 md:py-28">
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="mb-12">
-          <p className="mb-4 text-sm font-bold text-primary">مختارات صُنّاعنا</p>
-          <h2 className="text-3xl font-black md:text-5xl">{category ? `إبداعات ${category.label}` : "أشياء جميلة، صنعت بحب"}</h2>
-          <p className="mt-4 text-lg text-gray-500">مجموعة مختارة من المنتجات اليدوية المصنوعة بشغف وإتقان من حرفيين أردنيين.</p>
-          <label className="relative mt-7 block max-w-2xl" htmlFor="product-search">
+    <section id="featured-products" className="bg-white py-8 md:py-28">
+      <div className="container mx-auto px-3 md:px-6">
+        <div className="mb-5 md:mb-12">
+          <p className="mb-2 text-xs font-bold text-primary md:mb-4 md:text-sm">مختارات صُنّاعنا</p>
+          <h2 className="text-xl font-black md:text-5xl">{category ? `إبداعات ${category.label}` : "أشياء جميلة، صنعت بحب"}</h2>
+          <p className="mt-2 text-sm leading-6 text-gray-500 md:mt-4 md:text-lg">مجموعة مختارة من المنتجات اليدوية المصنوعة بشغف وإتقان من حرفيين أردنيين.</p>
+          <label className="relative mt-4 block max-w-2xl md:mt-7" htmlFor="product-search">
             <Search className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-            <input id="product-search" type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="ابحث باسم المنتج أو اسم المتجر..." className="h-14 w-full rounded-2xl border border-gray-200 bg-gray-50 px-12 text-base outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10" />
+            <input id="product-search" type="search" value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="ابحث باسم المنتج أو اسم المتجر..." className="h-10 w-full rounded-xl border border-gray-200 bg-gray-50 px-10 text-sm outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 md:h-14 md:rounded-2xl md:px-12 md:text-base" />
           </label>
         </div>
-        {isLoading && <div className="py-12 text-center text-gray-400">جارٍ تحميل أحدث المنتجات...</div>}
-        {!isLoading && filtered.length === 0 && <div className="flex flex-col items-center gap-4 py-20 text-gray-400"><PackageSearch className="h-12 w-12" />لا توجد منتجات في هذه الفئة حالياً</div>}
+        {isLoading && <div className="py-8 text-center text-sm text-gray-400 md:py-12">جارٍ تحميل أحدث المنتجات...</div>}
+        {!isLoading && filtered.length === 0 && <div className="flex flex-col items-center gap-3 py-12 text-sm text-gray-400 md:gap-4 md:py-20"><PackageSearch className="h-10 w-10 md:h-12 md:w-12" />لا توجد منتجات في هذه الفئة حالياً</div>}
         {!isLoading && filtered.length > 0 && <div className="grid grid-cols-2 gap-2.5 sm:gap-6 lg:grid-cols-4">
           {filtered.map((product, index) => {
             const favorite = favorites.includes(product.id);

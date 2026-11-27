@@ -12,7 +12,7 @@ export function Hero() {
   };
 
   return (
-    <section className="relative w-full min-h-[85vh] flex items-center justify-center overflow-hidden">
+    <section className="relative flex min-h-[360px] w-full items-center justify-center overflow-hidden md:min-h-[85vh]">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <img 
@@ -31,16 +31,16 @@ export function Hero() {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="max-w-4xl"
         >
-          <span className="inline-block py-1.5 px-4 mb-6 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-medium tracking-wide">
+          <span className="mb-3 inline-block rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium tracking-wide text-white sm:mb-6 sm:px-4 sm:py-1.5 sm:text-sm">
             السوق الحرفي الأول في الأردن
           </span>
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight md:leading-tight lg:leading-tight mb-6">
+          <h1 className="mb-3 text-2xl font-extrabold leading-tight text-white sm:text-4xl md:mb-6 md:text-6xl lg:text-7xl">
             أبدع واختار من أفضل المنتجات اليدوية في{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-l from-secondary to-primary">
               الأردن
             </span>
           </h1>
-          <p className="text-lg md:text-2xl text-gray-200 mb-10 max-w-2xl mx-auto leading-relaxed font-light">
+          <p className="mx-auto mb-5 max-w-2xl text-sm font-light leading-6 text-gray-200 sm:text-lg sm:leading-relaxed md:mb-10 md:text-2xl">
             ادعم الحرفيين المحليين واكتشف قطعاً فريدة صنعت بحب وإتقان، تصلك مباشرة من صناعها.
           </p>
           
@@ -50,8 +50,8 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
           >
             <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button onClick={scrollToProducts} className="rounded-full bg-gradient-to-r from-secondary to-primary text-white font-bold text-lg px-10 py-7 shadow-[0_0_40px_rgba(221,107,32,0.3)] hover:shadow-[0_0_60px_rgba(221,107,32,0.5)] transition-all hover:-translate-y-1">تصفح المنتجات</Button>
-              <Button asChild variant="outline" className="rounded-full border-white/50 bg-white/10 px-8 py-7 text-lg font-bold text-white hover:bg-white/20"><Link href="/register-seller">انضم كبائع</Link></Button>
+              <Button onClick={scrollToProducts} className="rounded-full bg-gradient-to-r from-secondary to-primary px-6 py-3 text-sm font-bold text-white shadow-[0_0_40px_rgba(221,107,32,0.3)] transition-all hover:-translate-y-1 sm:px-10 sm:py-7 sm:text-lg">تصفح المنتجات</Button>
+              <Button asChild variant="outline" className="rounded-full border-white/50 bg-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-white/20 sm:px-8 sm:py-7 sm:text-lg"><Link href="/register-seller">انضم كبائع</Link></Button>
             </div>
           </motion.div>
         </motion.div>
