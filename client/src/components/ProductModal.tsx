@@ -5,7 +5,14 @@ import { categoryLabel, type Product } from "@/data";
 import { trpc } from "@/lib/trpc";
 import { useEffect, useState } from "react";
 
-type ProductWithMetrics = Product & { likesCount?: number; whatsappClicks?: number };
+type ProductWithMetrics = Product & { likesCount?: number; whatsappClicks?: number; socialUrl?: string | null };
+
+function getSocialUrl(value: string) {
+  const trimmed = value.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith("@")) return `https://instagram.com/${trimmed.slice(1)}`;
+  return `https://${trimmed}`;
+}
 
 export function ProductModal({ product, isOpen, onClose }: { product: ProductWithMetrics | null; isOpen: boolean; onClose: () => void }) {
   const [liked, setLiked] = useState(false);
@@ -23,12 +30,13 @@ export function ProductModal({ product, isOpen, onClose }: { product: ProductWit
     const id = Number(product.id);
     if (Number.isInteger(id) && id > 0) void likeMutation.mutateAsync({ productId: id });
   };
-  const handleWhatsApp = () => {
+  const handleContact = () => {
     const text = encodeURIComponent(`مرحباً، أرغب بالاستفسار عن منتج "${product.name}" من متجر ${product.seller}، وسعره ${product.price}. هل المنتج متاح؟`);
     window.dispatchEvent(new CustomEvent("souq-whatsapp-click", { detail: { productId: product.id, productName: product.name, seller: product.seller, price: product.price } }));
     const id = Number(product.id);
     if (Number.isInteger(id) && id > 0) void clickMutation.mutateAsync({ productId: id });
-    window.open(`https://wa.me/${product.sellerPhone}?text=${text}`, "_blank", "noopener,noreferrer");
+    if (product.sellerPhone) window.open(`https://wa.me/${product.sellerPhone}?text=${text}`, "_blank", "noopener,noreferrer");
+    else if (product.socialUrl) window.open(getSocialUrl(product.socialUrl), "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -58,7 +66,7 @@ export function ProductModal({ product, isOpen, onClose }: { product: ProductWit
               <div className="mt-3 flex items-center gap-2 text-xs text-gray-400 md:mt-5 md:text-sm"><MapPin className="h-4 w-4" /> الأردن · شحن متفق عليه مع البائع</div>
             </div>
             <div className="mt-5 border-t border-gray-100 pt-4 md:mt-8 md:pt-6">
-              <Button onClick={handleWhatsApp} className="h-12 w-full rounded-xl bg-[#25D366] text-base font-black text-white shadow-lg shadow-[#25D366]/25 transition-transform hover:-translate-y-0.5 hover:bg-[#20bd5a] md:h-14 md:rounded-2xl md:text-lg"><MessageCircle className="h-5 w-5 md:h-6 md:w-6" /> اطلب عبر واتساب</Button>
+              <Button onClick={handleContact} className="h-12 w-full rounded-xl bg-[#25D366] text-base font-black text-white shadow-lg shadow-[#25D366]/25 transition-transform hover:-translate-y-0.5 hover:bg-[#20bd5a] md:h-14 md:rounded-2xl md:text-lg"><MessageCircle className="h-5 w-5 md:h-6 md:w-6" /> {product.sellerPhone ? "اطلب عبر واتساب" : "اطلب عبر إنستغرام / فيسبوك"}</Button>
               <p className="mt-2 text-center text-[11px] text-gray-400 md:mt-3 md:text-xs">تواصل مباشر مع البائع بدون وسطاء</p>
             </div>
           </div>

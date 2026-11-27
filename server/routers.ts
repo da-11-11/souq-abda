@@ -4,7 +4,7 @@ import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { adminProcedure, publicProcedure, router } from "./_core/trpc";
+import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { storagePut, storagePutReceipt, validateReceiptUpload } from "./storage";
 import {
   createMediaFile,
@@ -41,7 +41,8 @@ const MAX_ACTIVE_SELLERS = 30;
 const applicationInput = z.object({
   fullName: z.string().trim().min(2).max(160),
   projectName: z.string().trim().min(2).max(160),
-  whatsapp: z.string().trim().min(8).max(32),
+  whatsapp: z.string().trim().max(32).optional(),
+  socialUrl: z.string().trim().max(500).optional(),
   category: z.string().trim().min(1).max(64),
   description: z.string().trim().min(10).max(5000),
   planType: z.enum(["free_trial", "monthly", "yearly"]).default("monthly"),
@@ -56,7 +57,8 @@ const profileInput = z.object({
   accessToken: z.string().trim().min(4).max(32),
   fullName: z.string().trim().min(2).max(160).optional(),
   projectName: z.string().trim().min(2).max(160),
-  whatsapp: z.string().trim().min(8).max(32),
+  whatsapp: z.string().trim().max(32).optional(),
+  socialUrl: z.string().trim().max(500).optional(),
   category: z.string().trim().min(1).max(64),
   description: z.string().trim().min(10).max(5000),
 });
@@ -98,6 +100,10 @@ function planAmount(planType: "monthly" | "yearly") {
   return planType === "monthly" ? "10" : "100";
 }
 
+function canManageSeller(user: { email?: string | null; id: number }, seller: { userId: number | null; userEmail: string | null }) {
+  return user.email?.toLowerCase() === "dawoodrababh2008@gmail.com" || seller.userId === user.id || (!!user.email && seller.userEmail?.toLowerCase() === user.email.toLowerCase());
+}
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -120,6 +126,9 @@ export const appRouter = router({
   seller: router({
     submitApplication: publicProcedure.input(applicationInput).mutation(async ({ input, ctx }) => {
       const isFreeTrial = input.planType === "free_trial";
+      if (!input.whatsapp?.trim() && !input.socialUrl?.trim()) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "يرجى إدخال رقم واتساب أو رابط حساب إنستغرام/فيسبوك للتواصل" });
+      }
       if (!isFreeTrial && !input.senderAccountName?.trim()) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "اسم صاحب الحساب المحوّل إجباري للباقة المدفوعة" });
       }
@@ -152,7 +161,8 @@ export const appRouter = router({
         userEmail: ctx.user?.email ?? undefined,
         fullName: input.fullName,
         projectName: input.projectName,
-        whatsapp: input.whatsapp,
+        whatsapp: input.whatsapp?.trim() || undefined,
+        socialUrl: input.socialUrl?.trim() || undefined,
         category: input.category,
         description: input.description,
         planType: input.planType,
@@ -162,7 +172,7 @@ export const appRouter = router({
         trialEndsAt: isFreeTrial ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : undefined,
       } as Parameters<typeof createSellerApplication>[0]);
     }),
-    loginWithAccount: adminProcedure.query(async ({ ctx }) => {
+    loginWithAccount: protectedProcedure.query(async ({ ctx }) => {
       if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: "يرجى تسجيل الدخول أولاً" });
       const isOwner = ctx.user.email?.toLowerCase() === "dawoodrababh2008@gmail.com";
       const seller = isOwner ? await ensureOwnerSellerApplication({ userId: ctx.user.id, email: ctx.user.email!, fullName: ctx.user.name ?? undefined }) : await getSellerApplicationByAccount(ctx.user.id, ctx.user.email ?? undefined);
@@ -175,19 +185,23 @@ export const appRouter = router({
       if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: "يرجى تسجيل الدخول أولاً" });
       return getSellerApplicationByAccount(ctx.user.id, ctx.user.email ?? undefined);
     }),
-    login: adminProcedure.input(z.object({ accessToken: z.string().trim().min(4).max(32) })).query(async ({ input }) => {
+    login: protectedProcedure.input(z.object({ accessToken: z.string().trim().min(4).max(32) })).query(async ({ input, ctx }) => {
       const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
       if (!seller || seller.status !== "approved") throw new TRPCError({ code: "UNAUTHORIZED", message: "رمز الدخول غير صحيح أو لم تتم الموافقة على الطلب بعد" });
+      if (!canManageSeller(ctx.user, seller)) throw new TRPCError({ code: "FORBIDDEN", message: "لا تملك صلاحية إدارة هذا المتجر" });
       return seller;
     }),
-    updateProfile: adminProcedure.input(profileInput).mutation(async ({ input }) => {
+    updateProfile: protectedProcedure.input(profileInput).mutation(async ({ input, ctx }) => {
       const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
       if (!seller || seller.status !== "approved") throw new TRPCError({ code: "UNAUTHORIZED", message: "انتهت صلاحية جلسة البائع" });
-      return updateSellerApplicationProfile({ id: seller.id, projectName: input.projectName, whatsapp: input.whatsapp, category: input.category, description: input.description });
+      if (!canManageSeller(ctx.user, seller)) throw new TRPCError({ code: "FORBIDDEN", message: "لا تملك صلاحية إدارة هذا المتجر" });
+      if (!input.whatsapp?.trim() && !input.socialUrl?.trim()) throw new TRPCError({ code: "BAD_REQUEST", message: "يرجى إدخال رقم واتساب أو رابط حساب إنستغرام/فيسبوك للتواصل" });
+      return updateSellerApplicationProfile({ id: seller.id, projectName: input.projectName, whatsapp: input.whatsapp?.trim() || undefined, socialUrl: input.socialUrl?.trim() || undefined, category: input.category, description: input.description });
     }),
-    createProduct: adminProcedure.input(productInput).mutation(async ({ input }) => {
+    createProduct: protectedProcedure.input(productInput).mutation(async ({ input, ctx }) => {
       const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
       if (!seller || seller.status !== "approved") throw new TRPCError({ code: "UNAUTHORIZED", message: "انتهت صلاحية جلسة البائع" });
+      if (!canManageSeller(ctx.user, seller)) throw new TRPCError({ code: "FORBIDDEN", message: "لا تملك صلاحية إدارة هذا المتجر" });
       const stats = await getSellerProductStats(seller.id);
       if (stats.productCount >= seller.maxProducts) throw new TRPCError({ code: "PRECONDITION_FAILED", message: `وصل متجرك إلى الحد الأقصى من المنتجات (${seller.maxProducts}). اطلب زيادة السعة من لوحة المتجر.` });
       let imageUrl = input.imageUrl || "/manus-storage/product-giftbox_dac71a12.jpg";
@@ -204,20 +218,22 @@ export const appRouter = router({
         imageKey = uploaded.key;
         uploadedFile = { fileName: safeName, mimeType, sizeBytes: buffer.length };
       }
-      const productId = await createProduct({ sellerApplicationId: seller.id, name: input.name, shortDescription: input.shortDescription, description: input.description, price: input.price, seller: seller.projectName, sellerPhone: seller.whatsapp, category: input.category, imageUrl, imageKey });
+      const productId = await createProduct({ sellerApplicationId: seller.id, name: input.name, shortDescription: input.shortDescription, description: input.description, price: input.price, seller: seller.projectName, sellerPhone: seller.whatsapp ?? undefined, category: input.category, imageUrl, imageKey });
       if (uploadedFile && imageKey) await createMediaFile({ productId, storageKey: imageKey, url: imageUrl, ...uploadedFile });
       return { id: String(productId), imageUrl };
     }),
     likeProduct: publicProcedure.input(z.object({ productId: z.number().int().positive() })).mutation(({ input }) => incrementProductMetric(input.productId, "likesCount")),
     trackWhatsappClick: publicProcedure.input(z.object({ productId: z.number().int().positive() })).mutation(({ input }) => incrementProductMetric(input.productId, "whatsappClicks")),
-    productStats: adminProcedure.input(z.object({ accessToken: z.string().trim().min(4).max(32) })).query(async ({ input }) => {
+    productStats: protectedProcedure.input(z.object({ accessToken: z.string().trim().min(4).max(32) })).query(async ({ input, ctx }) => {
       const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
       if (!seller || seller.status !== "approved") throw new TRPCError({ code: "UNAUTHORIZED", message: "انتهت صلاحية جلسة البائع" });
+      if (!canManageSeller(ctx.user, seller)) throw new TRPCError({ code: "FORBIDDEN", message: "لا تملك صلاحية إدارة هذا المتجر" });
       return { maxProducts: seller.maxProducts, ...(await getSellerProductStats(seller.id)) };
     }),
-    requestSlotUpgrade: adminProcedure.input(slotUpgradeInput).mutation(async ({ input }) => {
+    requestSlotUpgrade: protectedProcedure.input(slotUpgradeInput).mutation(async ({ input, ctx }) => {
       const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
       if (!seller || seller.status !== "approved") throw new TRPCError({ code: "UNAUTHORIZED", message: "انتهت صلاحية جلسة البائع" });
+      if (!canManageSeller(ctx.user, seller)) throw new TRPCError({ code: "FORBIDDEN", message: "لا تملك صلاحية إدارة هذا المتجر" });
       const parsed = parseBase64Data(input.receiptData);
       const buffer = Buffer.from(parsed.base64, "base64");
       validateReceiptUpload(input.receiptMimeType, buffer.length);

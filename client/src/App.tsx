@@ -29,14 +29,13 @@ function AdminRoute() {
 function SellerGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
-  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
-  useEffect(() => { if (!loading && !isAdmin) navigate("/"); }, [loading, isAdmin, navigate]);
-  if (loading || !isAdmin) return <div className="flex min-h-screen items-center justify-center bg-orange-50 text-primary" dir="rtl">جارٍ التحقق من صلاحية المدير...</div>;
+  useEffect(() => { if (!loading && !user) navigate("/seller/login"); }, [loading, user, navigate]);
+  if (loading || !user) return <div className="flex min-h-screen items-center justify-center bg-orange-50 text-primary" dir="rtl">جارٍ التحقق من الحساب...</div>;
   return <>{children}</>;
 }
 
 function SellerAddProductRoute() { return <SellerGate><AddProduct /></SellerGate>; }
-function SellerLoginRoute() { return <SellerGate><SellerLogin /></SellerGate>; }
+function SellerLoginRoute() { return <SellerLogin />; }
 function SellerDashboardRoute() { return <SellerGate><SellerDashboard /></SellerGate>; }
 
 export default function App() {

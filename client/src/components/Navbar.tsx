@@ -11,6 +11,7 @@ export function Navbar() {
   const { user, isAuthenticated } = useAuth();
   const isAdmin = user?.email?.toLowerCase() === "dawoodrababh2008@gmail.com";
   const accountQuery = trpc.seller.loginWithAccount.useQuery(undefined, { enabled: isAuthenticated, retry: false });
+  const applicationQuery = trpc.seller.myApplication.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const login = () => startLogin();
 
   return (
@@ -41,7 +42,7 @@ export function Navbar() {
         {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3">
           {!isAuthenticated ? <Button onClick={login} variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5">تسجيل الدخول</Button> : <div className="hidden max-w-40 text-right lg:block"><b className="block truncate text-sm text-gray-800">{user?.name || "حسابي"}</b><span className="block truncate text-xs text-gray-400" dir="ltr">{user?.email}</span></div>}
-          {isAuthenticated && accountQuery.data ? <Button asChild variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5"><Link href="/seller/dashboard">لوحة متجري</Link></Button> : <Button asChild variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5"><Link href="/register-seller">أضف مشروعك</Link></Button>}
+          {accountQuery.data ? <Button asChild variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5"><Link href="/seller/dashboard">لوحة متجري</Link></Button> : applicationQuery.data?.status === "pending" ? <span className="rounded-full bg-amber-50 px-4 py-2 text-xs font-bold text-amber-700">طلب انضمامك قيد المراجعة</span> : <Button asChild variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5"><Link href="/register-seller">سجّل مشروعك</Link></Button>}
           {isAdmin && <Button asChild variant="outline" className="rounded-full border-orange-300 px-5 py-5 text-primary hover:bg-orange-50"><Link href="/admin">لوحة الإدارة</Link></Button>}
           <Button asChild className="rounded-full bg-gradient-to-r from-secondary to-primary text-white font-medium px-6 py-5 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:-translate-y-0.5"><Link href="/register-seller">سجّل مشروعك</Link></Button>
         </div>
@@ -72,7 +73,7 @@ export function Navbar() {
             {!isAuthenticated ? <button onClick={() => { setIsMenuOpen(false); login(); }} className="w-full">تسجيل الدخول</button> : <span className="text-center text-sm font-bold text-gray-700">{user?.name || user?.email}</span>}
           </Button>
           <Button asChild variant="outline" className="w-full rounded-full border-primary/30 py-4 text-sm text-primary">
-            {isAuthenticated && accountQuery.data ? <Link href="/seller/dashboard" onClick={() => setIsMenuOpen(false)}>لوحة متجري</Link> : <Link href="/register-seller" onClick={() => setIsMenuOpen(false)}>أضف مشروعك</Link>}
+            {accountQuery.data ? <Link href="/seller/dashboard" onClick={() => setIsMenuOpen(false)}>لوحة متجري</Link> : applicationQuery.data?.status === "pending" ? <span>طلب انضمامك قيد المراجعة</span> : <Link href="/register-seller" onClick={() => setIsMenuOpen(false)}>سجّل مشروعك</Link>}
           </Button>
           <Button asChild className="mt-1 w-full rounded-full bg-gradient-to-r from-secondary to-primary py-4 text-sm font-medium text-white"><Link href="/register-seller" onClick={() => setIsMenuOpen(false)}>سجّل مشروعك</Link></Button>
           {isAdmin && <Button asChild variant="outline" className="w-full rounded-full border-orange-300 py-4 text-sm text-primary"><Link href="/admin" onClick={() => setIsMenuOpen(false)}>لوحة الإدارة</Link></Button>}

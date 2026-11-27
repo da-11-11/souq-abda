@@ -9,10 +9,15 @@ const dbMocks = vi.hoisted(() => ({
   listSellerApplications: vi.fn(),
   decideSellerApplication: vi.fn(),
   updateSellerApplicationProfile: vi.fn(),
+  getSellerProductStats: vi.fn(),
+  getPlatformSettings: vi.fn(),
+  getActiveFreeTrialCount: vi.fn(),
 }));
 
 const storageMocks = vi.hoisted(() => ({
   storagePut: vi.fn(),
+  storagePutReceipt: vi.fn(),
+  validateReceiptUpload: vi.fn(),
 }));
 
 vi.mock("./db", () => dbMocks);
@@ -26,8 +31,15 @@ const context = {
   res: { clearCookie: vi.fn() } as never,
 };
 
+const sellerContext = {
+  ...context,
+  user: { id: 99, email: "seller@example.com", name: "أحمد محمد" },
+};
+
 const approvedSeller = {
   id: 7,
+  userId: 99,
+  userEmail: "seller@example.com",
   fullName: "أحمد محمد",
   projectName: "مخبز السعادة",
   whatsapp: "962790000000",
@@ -46,7 +58,9 @@ describe("seller marketplace procedures", () => {
     dbMocks.getSellerApplicationByToken.mockResolvedValue(approvedSeller);
     dbMocks.createProduct.mockResolvedValue(44);
     dbMocks.createMediaFile.mockResolvedValue(undefined);
+    dbMocks.getSellerProductStats.mockResolvedValue({ productCount: 0, whatsappClicks: 0, likesCount: 0, products: [] });
     storageMocks.storagePut.mockResolvedValue({ key: "products/7/item.png", url: "/manus-storage/products/7/item.png" });
+    storageMocks.storagePutReceipt.mockResolvedValue({ url: "/manus-storage/receipts/item.png" });
   });
 
   it("persists seller applications through the server router", async () => {
@@ -57,6 +71,10 @@ describe("seller marketplace procedures", () => {
       whatsapp: "962790000000",
       category: "food",
       description: "منتجات منزلية طازجة مصنوعة بعناية.",
+      planType: "monthly",
+      senderAccountName: "أحمد محمد",
+      receiptData: "data:image/png;base64,aGk=",
+      receiptMimeType: "image/png",
     });
 
     expect(result).toBe(12);
@@ -64,7 +82,7 @@ describe("seller marketplace procedures", () => {
   });
 
   it("rejects invalid seller tokens and returns approved sellers", async () => {
-    const caller = appRouter.createCaller(context);
+    const caller = appRouter.createCaller(sellerContext);
     expect(await caller.seller.login({ accessToken: "AB123456" })).toMatchObject({ id: 7, status: "approved" });
 
     dbMocks.getSellerApplicationByToken.mockResolvedValueOnce(undefined);
@@ -72,7 +90,7 @@ describe("seller marketplace procedures", () => {
   });
 
   it("uploads product images and stores only the storage reference with the product", async () => {
-    const caller = appRouter.createCaller(context);
+    const caller = appRouter.createCaller(sellerContext);
     const result = await caller.seller.createProduct({
       accessToken: "AB123456",
       name: "كيكة منزلية",

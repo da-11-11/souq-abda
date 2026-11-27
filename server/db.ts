@@ -78,7 +78,8 @@ export async function createSellerApplication(input: {
   userEmail?: string;
   fullName: string;
   projectName: string;
-  whatsapp: string;
+  whatsapp?: string;
+  socialUrl?: string;
   category: string;
   description: string;
   planType: "free_trial" | "monthly" | "yearly";
@@ -209,12 +210,13 @@ export async function decideSellerApplication(id: number, status: "approved" | "
 export async function updateSellerApplicationProfile(input: {
   id: number;
   projectName: string;
-  whatsapp: string;
+  whatsapp?: string;
+  socialUrl?: string;
   category: string;
   description: string;
 }) {
   const db = await requireDb();
-  await db.update(sellerApplications).set({ projectName: input.projectName, whatsapp: input.whatsapp, category: input.category, description: input.description }).where(eq(sellerApplications.id, input.id));
+  await db.update(sellerApplications).set({ projectName: input.projectName, whatsapp: input.whatsapp || null, socialUrl: input.socialUrl || null, category: input.category, description: input.description }).where(eq(sellerApplications.id, input.id));
   return getSellerApplicationById(input.id);
 }
 
@@ -226,8 +228,8 @@ export async function getSellerApplicationById(id: number) {
 
 export async function listProducts() {
   const db = await requireDb();
-  const rows = await db.select({ product: products }).from(products).innerJoin(sellerApplications, eq(products.sellerApplicationId, sellerApplications.id)).where(eq(sellerApplications.status, "approved")).orderBy(desc(products.isFeatured), desc(products.whatsappClicks), desc(products.createdAt));
-  return rows.map(({ product: row }) => ({
+  const rows = await db.select({ product: products, socialUrl: sellerApplications.socialUrl }).from(products).innerJoin(sellerApplications, eq(products.sellerApplicationId, sellerApplications.id)).where(eq(sellerApplications.status, "approved")).orderBy(desc(products.isFeatured), desc(products.whatsappClicks), desc(products.createdAt));
+  return rows.map(({ product: row, socialUrl }) => ({
     id: String(row.id),
     name: row.name,
     shortDescription: row.shortDescription,
@@ -235,6 +237,7 @@ export async function listProducts() {
     price: row.price,
     seller: row.seller,
     sellerPhone: row.sellerPhone,
+    socialUrl,
     category: row.category,
     image: row.imageUrl,
     isVIP: row.isVip,
@@ -312,7 +315,7 @@ export async function createProduct(input: {
   description: string;
   price: string;
   seller: string;
-  sellerPhone: string;
+  sellerPhone?: string;
   category: string;
   imageUrl: string;
   imageKey?: string;
