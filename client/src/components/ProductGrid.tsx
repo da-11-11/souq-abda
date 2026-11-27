@@ -46,7 +46,7 @@ export function ProductGrid({ selectedCategory }: { selectedCategory: string | n
         </div>
         {isLoading && <div className="py-12 text-center text-gray-400">جارٍ تحميل أحدث المنتجات...</div>}
         {!isLoading && filtered.length === 0 && <div className="flex flex-col items-center gap-4 py-20 text-gray-400"><PackageSearch className="h-12 w-12" />لا توجد منتجات في هذه الفئة حالياً</div>}
-        {!isLoading && filtered.length > 0 && <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {!isLoading && filtered.length > 0 && <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
           {filtered.map((product, index) => {
             const favorite = favorites.includes(product.id);
             return <motion.article key={product.id} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.06 }} onClick={() => setSelected(product)} className="group cursor-pointer overflow-hidden rounded-[1.75rem] border border-gray-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
