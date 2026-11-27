@@ -16,7 +16,7 @@ export default function SellerLogin() {
   useEffect(() => {
     if (accountQuery.data?.accessToken) {
       sessionStorage.setItem("sellerToken", accountQuery.data.accessToken);
-      navigate("/seller-dashboard");
+      navigate("/seller/dashboard");
     }
   }, [accountQuery.data, navigate]);
 
@@ -28,7 +28,7 @@ export default function SellerLogin() {
       const result = await loginQuery.refetch();
       if (!result.data) throw new Error("رمز الدخول غير صحيح");
       sessionStorage.setItem("sellerToken", token.trim().toUpperCase());
-      navigate("/seller-dashboard");
+      navigate("/seller/dashboard");
     } catch {
       setError("رمز الدخول غير صحيح أو لم تتم الموافقة على الطلب بعد.");
     }

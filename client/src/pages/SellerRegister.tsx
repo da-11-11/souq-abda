@@ -1,11 +1,13 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { SellerForm } from "@/components/SellerForm";
+import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { ArrowRight, CheckCircle2, LogIn, ShoppingBag } from "lucide-react";
 
 export default function SellerRegister() {
   const { user, loading, isAuthenticated } = useAuth();
+  const applicationQuery = trpc.seller.myApplication.useQuery(undefined, { enabled: isAuthenticated, retry: false });
 
   const login = () => {
     sessionStorage.setItem("sellerAuthReturn", "/register-seller");
@@ -44,6 +46,20 @@ export default function SellerRegister() {
               <button onClick={login} className="mt-7 flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-secondary to-primary px-5 py-4 font-bold text-white shadow-lg shadow-primary/20 transition hover:-translate-y-0.5 active:scale-[.98]"><LogIn className="h-5 w-5" />تسجيل الدخول عبر Manus</button>
               <p className="mt-4 text-xs text-gray-400">لا نطلب كلمة مرور جديدة؛ حسابك الموحد يحمي دخولك إلى لوحة المتجر.</p>
             </div>
+          </section>
+        ) : applicationQuery.data?.status === "pending" ? (
+          <section className="mx-auto max-w-2xl rounded-[2rem] bg-white p-10 text-center shadow-2xl">
+            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600"><CheckCircle2 className="h-8 w-8" /></div>
+            <h2 className="text-2xl font-black">طلبك قيد المراجعة</h2>
+            <p className="mt-4 leading-8 text-gray-600">طلبك قيد المراجعة من قبل الإدارة، سيتم تفعيل صلاحية إضافة مشروعك فور الموافقة.</p>
+            <p className="mt-3 text-sm text-gray-400" dir="ltr">{user?.email}</p>
+          </section>
+        ) : applicationQuery.data?.status === "approved" ? (
+          <section className="mx-auto max-w-2xl rounded-[2rem] bg-white p-10 text-center shadow-2xl">
+            <CheckCircle2 className="mx-auto mb-5 h-16 w-16 text-green-600" />
+            <h2 className="text-2xl font-black">متجرك مفعّل</h2>
+            <p className="mt-4 leading-8 text-gray-600">يمكنك الآن إدارة متجرك وإضافة منتجاتك.</p>
+            <Link href="/seller/dashboard" className="mt-7 inline-flex rounded-full bg-gradient-to-r from-secondary to-primary px-7 py-3 font-bold text-white">لوحة متجري</Link>
           </section>
         ) : (
           <section className="rounded-[2rem] bg-white p-4 text-[#1A1A1A] shadow-2xl sm:p-8">

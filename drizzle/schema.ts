@@ -42,7 +42,7 @@ export const sellerApplications = mysqlTable("seller_applications", {
   senderAccountName: varchar("senderAccountName", { length: 160 }).notNull(),
   referenceNumber: varchar("referenceNumber", { length: 120 }),
   trialEndsAt: timestamp("trialEndsAt"),
-  status: mysqlEnum("status", ["pending", "approved", "rejected"])
+  status: mysqlEnum("status", ["pending", "approved", "rejected", "expired"])
     .default("pending")
     .notNull(),
   accessToken: varchar("accessToken", { length: 32 }).unique(),

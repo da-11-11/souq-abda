@@ -1,9 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { desc, eq, or } from "drizzle-orm";
 import { COOKIE_NAME } from "@shared/const";
-import { sellerApplications } from "../drizzle/schema";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
@@ -18,12 +16,12 @@ import {
   getActiveSellerCount,
   getPlatformSettings,
   getSellerApplicationById,
+  getSellerApplicationByAccount,
   getSellerApplicationByToken,
   listProducts,
   listSellerApplications,
   updatePlatformSettings,
   updateSellerApplicationProfile,
-  getDb,
 } from "./db";
 
 const adminPassword = process.env.ADMIN_PANEL_PASSWORD ?? "admin2026";
@@ -142,16 +140,15 @@ export const appRouter = router({
     }),
     loginWithAccount: publicProcedure.query(async ({ ctx }) => {
       if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: "يرجى تسجيل الدخول أولاً" });
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة حالياً" });
-      const conditions = [eq(sellerApplications.userId, ctx.user.id)];
-      if (ctx.user.email) conditions.push(eq(sellerApplications.userEmail, ctx.user.email));
-      const rows = await db.select().from(sellerApplications).where(or(...conditions)).orderBy(desc(sellerApplications.createdAt)).limit(1);
-      const seller = rows[0];
+      const seller = await getSellerApplicationByAccount(ctx.user.id, ctx.user.email ?? undefined);
       if (!seller || seller.status !== "approved" || !seller.accessToken) {
         throw new TRPCError({ code: "NOT_FOUND", message: "لا يوجد متجر مفعّل مرتبط بهذا الحساب" });
       }
       return seller;
+    }),
+    myApplication: publicProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: "يرجى تسجيل الدخول أولاً" });
+      return getSellerApplicationByAccount(ctx.user.id, ctx.user.email ?? undefined);
     }),
     login: publicProcedure.input(z.object({ accessToken: z.string().trim().min(4).max(32) })).query(async ({ input }) => {
       const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
@@ -204,13 +201,13 @@ export const appRouter = router({
       const { password: _password, ...changes } = input;
       return updatePlatformSettings(changes);
     }),
-    grantFreeTrial: publicProcedure.input(z.object({ password: z.string(), projectName: z.string().trim().min(2).max(160), whatsapp: z.string().trim().min(8).max(32) })).mutation(async ({ input }) => {
+    grantFreeTrial: publicProcedure.input(z.object({ password: z.string(), projectName: z.string().trim().min(2).max(160), whatsapp: z.string().trim().min(8).max(32), userEmail: z.string().email().optional() })).mutation(async ({ input }) => {
       requireAdmin(input.password);
       const settings = await getPlatformSettings();
       const used = await getActiveFreeTrialCount();
       if (used >= (settings?.maxFreeTrials ?? 30)) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "لا توجد مقاعد مجانية متاحة" });
       const accessToken = makeAccessToken();
-      return createDirectFreeTrial({ projectName: input.projectName, whatsapp: input.whatsapp, accessToken, trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
+      return createDirectFreeTrial({ projectName: input.projectName, whatsapp: input.whatsapp, userEmail: input.userEmail, accessToken, trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     }),
     decideApplication: publicProcedure.input(z.object({ password: z.string(), id: z.number().int().positive(), status: z.enum(["approved", "rejected"]) })).mutation(async ({ input }) => {
       requireAdmin(input.password);

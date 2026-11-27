@@ -5,7 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { CheckCircle2, LogOut, PackagePlus, ShoppingBag, User } from "lucide-react";
 
-type SellerData = { id: number; fullName: string; projectName: string; whatsapp: string; category: string; description: string; status: "approved" | "pending" | "rejected"; accessToken: string | null };
+type SellerData = { id: number; fullName: string; projectName: string; whatsapp: string; category: string; description: string; status: "approved" | "pending" | "rejected" | "expired"; accessToken: string | null };
 
 export default function SellerDashboard() {
   const [, navigate] = useLocation();

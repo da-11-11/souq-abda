@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gt } from "drizzle-orm";
+import { and, count, desc, eq, gt, ne, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   type InsertUser,
@@ -73,6 +73,8 @@ export async function getUserByOpenId(openId: string): Promise<User | undefined>
 }
 
 export async function createSellerApplication(input: {
+  userId?: number;
+  userEmail?: string;
   fullName: string;
   projectName: string;
   whatsapp: string;
@@ -119,9 +121,11 @@ export async function getActiveFreeTrialCount() {
   return Number(result[0]?.value ?? 0);
 }
 
-export async function createDirectFreeTrial(input: { projectName: string; whatsapp: string; accessToken: string; trialEndsAt: Date }) {
+export async function createDirectFreeTrial(input: { projectName: string; whatsapp: string; accessToken: string; trialEndsAt: Date; userId?: number; userEmail?: string }) {
   const db = await requireDb();
   const result = await db.insert(sellerApplications).values({
+    userId: input.userId,
+    userEmail: input.userEmail,
     fullName: input.projectName,
     projectName: input.projectName,
     whatsapp: input.whatsapp,
@@ -145,12 +149,30 @@ export async function listSellerApplications() {
 export async function getSellerApplicationByToken(accessToken: string) {
   const db = await requireDb();
   const result = await db.select().from(sellerApplications).where(eq(sellerApplications.accessToken, accessToken)).limit(1);
-  return result[0];
+  const seller = result[0];
+  if (seller?.status === "approved" && seller.planType === "free_trial" && seller.trialEndsAt && seller.trialEndsAt <= new Date()) {
+    await db.update(sellerApplications).set({ status: "expired" }).where(eq(sellerApplications.id, seller.id));
+    return { ...seller, status: "expired" as const };
+  }
+  return seller;
+}
+
+export async function getSellerApplicationByAccount(userId: number, email?: string) {
+  const db = await requireDb();
+  const conditions = [eq(sellerApplications.userId, userId)];
+  if (email) conditions.push(eq(sellerApplications.userEmail, email));
+  const result = await db.select().from(sellerApplications).where(or(...conditions)).orderBy(desc(sellerApplications.createdAt)).limit(1);
+  const seller = result[0];
+  if (seller?.status === "approved" && seller.planType === "free_trial" && seller.trialEndsAt && seller.trialEndsAt <= new Date()) {
+    await db.update(sellerApplications).set({ status: "expired" }).where(eq(sellerApplications.id, seller.id));
+    return { ...seller, status: "expired" as const };
+  }
+  return seller;
 }
 
 export async function getActiveSellerCount() {
   const db = await requireDb();
-  const result = await db.select({ value: count() }).from(sellerApplications).where(eq(sellerApplications.status, "approved"));
+  const result = await db.select({ value: count() }).from(sellerApplications).where(and(eq(sellerApplications.status, "approved"), or(ne(sellerApplications.planType, "free_trial"), gt(sellerApplications.trialEndsAt, new Date()))));
   return Number(result[0]?.value ?? 0);
 }
 

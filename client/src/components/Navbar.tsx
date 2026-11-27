@@ -2,9 +2,15 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { Search, Menu, ShoppingBag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { startLogin } from "@/const";
+import { trpc } from "@/lib/trpc";
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, isAuthenticated } = useAuth();
+  const accountQuery = trpc.seller.loginWithAccount.useQuery(undefined, { enabled: isAuthenticated, retry: false });
+  const login = () => startLogin();
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
@@ -33,12 +39,8 @@ export function Navbar() {
 
         {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3">
-          <Button asChild variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5">
-            <Link href="/seller/login">دخول البائعين</Link>
-          </Button>
-          <Button asChild variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5">
-            <Link href="/add-product">أضف منتجك</Link>
-          </Button>
+          {!isAuthenticated ? <Button onClick={login} variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5">تسجيل الدخول</Button> : <div className="hidden max-w-40 text-right lg:block"><b className="block truncate text-sm text-gray-800">{user?.name || "حسابي"}</b><span className="block truncate text-xs text-gray-400" dir="ltr">{user?.email}</span></div>}
+          {isAuthenticated && accountQuery.data ? <Button asChild variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5"><Link href="/seller/dashboard">لوحة متجري</Link></Button> : <Button asChild variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5"><Link href="/register-seller">أضف مشروعك</Link></Button>}
           <Button asChild className="rounded-full bg-gradient-to-r from-secondary to-primary text-white font-medium px-6 py-5 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:-translate-y-0.5"><Link href="/register-seller">سجّل مشروعك</Link></Button>
         </div>
 
@@ -65,10 +67,10 @@ export function Navbar() {
             />
           </div>
           <Button asChild variant="outline" className="w-full rounded-full border-primary/30 py-6 text-lg text-primary">
-            <Link href="/seller/login" onClick={() => setIsMenuOpen(false)}>دخول البائعين</Link>
+            {!isAuthenticated ? <button onClick={() => { setIsMenuOpen(false); login(); }} className="w-full">تسجيل الدخول</button> : <span className="text-center text-sm font-bold text-gray-700">{user?.name || user?.email}</span>}
           </Button>
           <Button asChild variant="outline" className="w-full rounded-full border-primary/30 py-6 text-lg text-primary">
-            <Link href="/add-product" onClick={() => setIsMenuOpen(false)}>أضف منتجك</Link>
+            {isAuthenticated && accountQuery.data ? <Link href="/seller/dashboard" onClick={() => setIsMenuOpen(false)}>لوحة متجري</Link> : <Link href="/register-seller" onClick={() => setIsMenuOpen(false)}>أضف مشروعك</Link>}
           </Button>
           <Button asChild className="w-full rounded-full bg-gradient-to-r from-secondary to-primary text-white font-medium py-6 text-lg mt-2"><Link href="/register-seller" onClick={() => setIsMenuOpen(false)}>سجّل مشروعك</Link></Button>
         </div>
