@@ -13,35 +13,35 @@ export default function SellerRegister() {
   };
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center bg-[#1A1A1A] text-[#D4AF37]" dir="rtl">جارٍ التحقق من الحساب...</div>;
+    return <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-white to-amber-50 text-primary" dir="rtl">جارٍ التحقق من الحساب...</div>;
   }
 
   return (
-    <main className="min-h-screen bg-[#1A1A1A] px-4 py-8 text-white" dir="rtl">
+    <main className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 px-4 py-8 text-[#1A1A1A]" dir="rtl">
       <div className="mx-auto max-w-6xl">
         <header className="mb-8 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 text-white transition-opacity hover:opacity-80">
-            <span className="rounded-2xl bg-[#D4AF37]/15 p-3"><ShoppingBag className="h-7 w-7 text-[#D4AF37]" /></span>
-            <span className="text-2xl font-black">سوق أبدع</span>
+          <Link href="/" className="flex items-center gap-3 text-primary transition-opacity hover:opacity-80">
+            <span className="rounded-2xl bg-orange-100 p-3"><ShoppingBag className="h-7 w-7 text-primary" /></span>
+            <span className="text-2xl font-black text-primary">سوق أبدع</span>
           </Link>
-          <Link href="/" className="flex items-center gap-2 text-sm text-white/70 hover:text-[#D4AF37]"><ArrowRight className="h-4 w-4" />العودة للمتجر</Link>
+          <Link href="/" className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary"><ArrowRight className="h-4 w-4" />العودة للمتجر</Link>
         </header>
 
-        <section className="mb-8 rounded-[2rem] border border-[#D4AF37]/25 bg-white/[0.06] p-6 shadow-2xl sm:p-10">
+        <section className="mb-8 rounded-[2rem] border border-primary/15 bg-white p-6 shadow-xl sm:p-10">
           <div className="max-w-3xl">
-            <p className="mb-3 text-sm font-bold tracking-[0.2em] text-[#D4AF37]">بوابة الحرفيين الأردنيين</p>
+            <p className="mb-3 text-sm font-bold tracking-[0.2em] text-primary">بوابة الحرفيين الأردنيين</p>
             <h1 className="text-3xl font-black leading-tight sm:text-5xl">حوّل موهبتك إلى متجر يصل إلى عملاء جدد</h1>
-            <p className="mt-4 max-w-2xl text-base leading-8 text-white/70">سجّل حسابك بأمان عبر Manus، ثم أرسل بيانات مشروعك واختر التجربة المجانية أو الباقة المناسبة.</p>
+            <p className="mt-4 max-w-2xl text-base leading-8 text-gray-600">سجّل حسابك بأمان عبر Manus، ثم أرسل بيانات مشروعك واختر التجربة المجانية أو الباقة المناسبة.</p>
           </div>
         </section>
 
         {!isAuthenticated ? (
           <section className="mx-auto max-w-2xl rounded-[2rem] bg-white p-8 text-[#1A1A1A] shadow-2xl sm:p-12">
             <div className="mx-auto max-w-md text-center">
-              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#D4AF37]/15"><LogIn className="h-8 w-8 text-[#9c7d12]" /></div>
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100"><LogIn className="h-8 w-8 text-primary" /></div>
               <h2 className="text-2xl font-black">ابدأ بتسجيل حسابك</h2>
               <p className="mt-3 leading-7 text-gray-500">تسجيل الدخول الموحد عبر Manus متاح باستخدام Google أو Microsoft أو Apple، وستعود تلقائياً إلى هذه الصفحة.</p>
-              <button onClick={login} className="mt-7 flex w-full items-center justify-center gap-3 rounded-2xl bg-[#1A1A1A] px-5 py-4 font-bold text-white transition hover:bg-black active:scale-[.98]"><LogIn className="h-5 w-5 text-[#D4AF37]" />تسجيل الدخول عبر Manus</button>
+              <button onClick={login} className="mt-7 flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-secondary to-primary px-5 py-4 font-bold text-white shadow-lg shadow-primary/20 transition hover:-translate-y-0.5 active:scale-[.98]"><LogIn className="h-5 w-5" />تسجيل الدخول عبر Manus</button>
               <p className="mt-4 text-xs text-gray-400">لا نطلب كلمة مرور جديدة؛ حسابك الموحد يحمي دخولك إلى لوحة المتجر.</p>
             </div>
           </section>
