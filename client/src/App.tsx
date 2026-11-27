@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import Home from "@/pages/Home";
 import AddProduct from "@/pages/AddProduct";
 import SellerLogin from "@/pages/SellerLogin";
@@ -29,8 +30,10 @@ function AdminRoute() {
 function SellerGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
-  useEffect(() => { if (!loading && !user) navigate("/seller/login"); }, [loading, user, navigate]);
-  if (loading || !user) return <div className="flex min-h-screen items-center justify-center bg-orange-50 text-primary" dir="rtl">جارٍ التحقق من الحساب...</div>;
+  const sellerQuery = trpc.seller.loginWithAccount.useQuery(undefined, { enabled: Boolean(user) && !loading, retry: false });
+  useEffect(() => { if (!loading && !user) navigate("/seller/login"); else if (!loading && user && !sellerQuery.isLoading && sellerQuery.isError) navigate("/seller/login"); }, [loading, user, sellerQuery.isLoading, sellerQuery.isError, navigate]);
+  if (loading || !user || sellerQuery.isLoading) return <div className="flex min-h-screen items-center justify-center bg-orange-50 text-primary" dir="rtl">جارٍ التحقق من اعتماد المتجر...</div>;
+  if (sellerQuery.isError || !sellerQuery.data) return null;
   return <>{children}</>;
 }
 
