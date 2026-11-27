@@ -1,6 +1,9 @@
 import { categories } from "@/data";
 import { motion } from "framer-motion";
 import { LayoutGrid } from "lucide-react";
+import { useState } from "react";
+
+type PriceFilter = "all" | "under10" | "10to20" | "over20";
 
 export function Categories({
   selectedCategory,
@@ -9,6 +12,19 @@ export function Categories({
   selectedCategory: string | null;
   onSelectCategory: (id: string | null) => void;
 }) {
+  const [selectedPrice, setSelectedPrice] = useState<PriceFilter>("all");
+  const priceFilters: { id: PriceFilter; label: string }[] = [
+    { id: "all", label: "الكل" },
+    { id: "under10", label: "أقل من 10 دنانير" },
+    { id: "10to20", label: "10 - 20 ديناراً" },
+    { id: "over20", label: "أكثر من 20 ديناراً" },
+  ];
+
+  const selectPrice = (id: PriceFilter) => {
+    setSelectedPrice(id);
+    window.dispatchEvent(new CustomEvent<PriceFilter>("souq-price-filter", { detail: id }));
+  };
+
   return (
     <section id="categories" className="py-16 bg-gray-50 overflow-hidden">
       <div className="container mx-auto px-4 md:px-6">
@@ -71,6 +87,20 @@ export function Categories({
               </motion.button>
             );
           })}
+        </div>
+        <div className="flex flex-wrap items-center gap-2" aria-label="فلترة حسب السعر">
+          <span className="ml-2 text-sm font-bold text-gray-500">السعر بالدينار الأردني:</span>
+          {priceFilters.map((filter) => (
+            <button
+              key={filter.id}
+              type="button"
+              onClick={() => selectPrice(filter.id)}
+              aria-pressed={selectedPrice === filter.id}
+              className={`rounded-full border px-4 py-2 text-sm font-bold transition ${selectedPrice === filter.id ? "border-primary bg-primary text-white shadow-md" : "border-gray-200 bg-white text-gray-600 hover:border-primary/50 hover:text-primary"}`}
+            >
+              {filter.label}
+            </button>
+          ))}
         </div>
       </div>
     </section>

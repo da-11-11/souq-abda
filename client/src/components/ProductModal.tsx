@@ -7,7 +7,8 @@ export function ProductModal({ product, isOpen, onClose }: { product: Product | 
   if (!product) return null;
 
   const handleWhatsApp = () => {
-    const text = encodeURIComponent(`مرحباً، أنا مهتم بمنتج "${product.name}" المعروض في سوق أبدع.`);
+    const text = encodeURIComponent(`مرحباً، أرغب بالاستفسار عن منتج "${product.name}" من متجر ${product.seller}، وسعره ${product.price}. هل المنتج متاح؟`);
+    window.dispatchEvent(new CustomEvent("souq-whatsapp-click", { detail: { productId: product.id, productName: product.name, seller: product.seller, price: product.price } }));
     window.open(`https://wa.me/${product.sellerPhone}?text=${text}`, "_blank", "noopener,noreferrer");
   };
 
@@ -17,7 +18,7 @@ export function ProductModal({ product, isOpen, onClose }: { product: Product | 
         <DialogTitle className="sr-only">{product.name}</DialogTitle>
         <div className="flex max-h-[90vh] flex-col md:flex-row">
           <div className="relative w-full bg-gray-100 md:w-1/2">
-            <img src={product.image} alt={product.name} className="h-full min-h-[300px] w-full object-cover" />
+            <img src={product.image} alt={product.name} loading="lazy" className="h-full min-h-[300px] w-full object-cover" />
             {product.isVIP && <div className="absolute right-4 top-4 flex items-center gap-1 rounded-full bg-[#ffb300] px-3 py-1.5 text-xs font-black text-gray-950 shadow-lg"><Crown className="h-3.5 w-3.5" /> بائع موثوق</div>}
           </div>
           <div className="flex w-full flex-col justify-between overflow-y-auto p-6 md:w-1/2 md:p-8">
