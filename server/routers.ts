@@ -10,18 +10,29 @@ import {
   createMediaFile,
   createDirectFreeTrial,
   createProduct,
+  createSlotUpgradeRequest,
   createSellerApplication,
+  decideSlotUpgradeRequest,
   decideSellerApplication,
   getActiveFreeTrialCount,
   getActiveSellerCount,
+  getAdminOverview,
   getPlatformSettings,
   getSellerApplicationById,
   getSellerApplicationByAccount,
   getSellerApplicationByToken,
+  getSellerProductStats,
+  incrementProductMetric,
   listProducts,
+  listAdminProducts,
+  listSlotUpgradeRequests,
   listSellerApplications,
   updatePlatformSettings,
   updateSellerApplicationProfile,
+  setProductFeatured,
+  deleteProduct,
+  renewSeller,
+  setSellerSuspended,
 } from "./db";
 
 const adminPassword = process.env.ADMIN_PANEL_PASSWORD ?? "admin2026";
@@ -63,6 +74,16 @@ const productInput = z.object({
   imageMimeType: z.string().trim().max(120).optional(),
 });
 
+const slotUpgradeInput = z.object({
+  accessToken: z.string().trim().min(4).max(32),
+  planType: z.enum(["single", "bundle"]),
+  receiptData: z.string().min(20).max(15_000_000),
+  receiptFileName: z.string().trim().max(255).optional(),
+  receiptMimeType: z.enum(["image/jpeg", "image/png"]),
+  senderAccountName: z.string().trim().min(2).max(160),
+  referenceNumber: z.string().trim().max(120).optional(),
+});
+
 function requireAdmin(password: string) {
   if (password !== adminPassword) throw new TRPCError({ code: "FORBIDDEN", message: "بيانات الإدارة غير صحيحة" });
 }
@@ -90,7 +111,7 @@ export const appRouter = router({
       return { success: true } as const;
     }),
   }),
-  catalog: router({ list: publicProcedure.query(() => listProducts()) }),
+  catalog: router({ list: publicProcedure.query(() => listProducts()), announcement: publicProcedure.query(async () => { const settings = await getPlatformSettings(); return { text: settings?.announcementText ?? "", active: Boolean(settings?.isAnnouncementActive && settings?.announcementText) }; }) }),
   trial: router({
     getTrialStatus: publicProcedure.query(async () => {
       const settings = await getPlatformSettings();
@@ -138,7 +159,7 @@ export const appRouter = router({
         trialEndsAt: isFreeTrial ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : undefined,
       } as Parameters<typeof createSellerApplication>[0]);
     }),
-    loginWithAccount: publicProcedure.query(async ({ ctx }) => {
+    loginWithAccount: adminProcedure.query(async ({ ctx }) => {
       if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: "يرجى تسجيل الدخول أولاً" });
       const seller = await getSellerApplicationByAccount(ctx.user.id, ctx.user.email ?? undefined);
       if (!seller || seller.status !== "approved" || !seller.accessToken) {
@@ -150,19 +171,21 @@ export const appRouter = router({
       if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: "يرجى تسجيل الدخول أولاً" });
       return getSellerApplicationByAccount(ctx.user.id, ctx.user.email ?? undefined);
     }),
-    login: publicProcedure.input(z.object({ accessToken: z.string().trim().min(4).max(32) })).query(async ({ input }) => {
+    login: adminProcedure.input(z.object({ accessToken: z.string().trim().min(4).max(32) })).query(async ({ input }) => {
       const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
       if (!seller || seller.status !== "approved") throw new TRPCError({ code: "UNAUTHORIZED", message: "رمز الدخول غير صحيح أو لم تتم الموافقة على الطلب بعد" });
       return seller;
     }),
-    updateProfile: publicProcedure.input(profileInput).mutation(async ({ input }) => {
+    updateProfile: adminProcedure.input(profileInput).mutation(async ({ input }) => {
       const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
       if (!seller || seller.status !== "approved") throw new TRPCError({ code: "UNAUTHORIZED", message: "انتهت صلاحية جلسة البائع" });
       return updateSellerApplicationProfile({ id: seller.id, projectName: input.projectName, whatsapp: input.whatsapp, category: input.category, description: input.description });
     }),
-    createProduct: publicProcedure.input(productInput).mutation(async ({ input }) => {
+    createProduct: adminProcedure.input(productInput).mutation(async ({ input }) => {
       const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
       if (!seller || seller.status !== "approved") throw new TRPCError({ code: "UNAUTHORIZED", message: "انتهت صلاحية جلسة البائع" });
+      const stats = await getSellerProductStats(seller.id);
+      if (stats.productCount >= seller.maxProducts) throw new TRPCError({ code: "PRECONDITION_FAILED", message: `وصل متجرك إلى الحد الأقصى من المنتجات (${seller.maxProducts}). اطلب زيادة السعة من لوحة المتجر.` });
       let imageUrl = input.imageUrl || "/manus-storage/product-giftbox_dac71a12.jpg";
       let imageKey: string | undefined;
       let uploadedFile: { fileName: string; mimeType: string; sizeBytes: number } | undefined;
@@ -181,18 +204,49 @@ export const appRouter = router({
       if (uploadedFile && imageKey) await createMediaFile({ productId, storageKey: imageKey, url: imageUrl, ...uploadedFile });
       return { id: String(productId), imageUrl };
     }),
+    likeProduct: publicProcedure.input(z.object({ productId: z.number().int().positive() })).mutation(({ input }) => incrementProductMetric(input.productId, "likesCount")),
+    trackWhatsappClick: publicProcedure.input(z.object({ productId: z.number().int().positive() })).mutation(({ input }) => incrementProductMetric(input.productId, "whatsappClicks")),
+    productStats: adminProcedure.input(z.object({ accessToken: z.string().trim().min(4).max(32) })).query(async ({ input }) => {
+      const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
+      if (!seller || seller.status !== "approved") throw new TRPCError({ code: "UNAUTHORIZED", message: "انتهت صلاحية جلسة البائع" });
+      return { maxProducts: seller.maxProducts, ...(await getSellerProductStats(seller.id)) };
+    }),
+    requestSlotUpgrade: adminProcedure.input(slotUpgradeInput).mutation(async ({ input }) => {
+      const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
+      if (!seller || seller.status !== "approved") throw new TRPCError({ code: "UNAUTHORIZED", message: "انتهت صلاحية جلسة البائع" });
+      const parsed = parseBase64Data(input.receiptData);
+      const buffer = Buffer.from(parsed.base64, "base64");
+      validateReceiptUpload(input.receiptMimeType, buffer.length);
+      const uploaded = await storagePutReceipt(`upgrade-${seller.id}-${randomUUID()}`, buffer, input.receiptMimeType);
+      const requestedSlots = input.planType === "single" ? 1 : 5;
+      return createSlotUpgradeRequest({ sellerApplicationId: seller.id, planType: input.planType, requestedSlots, amount: input.planType === "single" ? "1" : "5", receiptUrl: uploaded.url, senderAccountName: input.senderAccountName, referenceNumber: input.referenceNumber });
+    }),
   }),
   admin: router({
     applications: adminProcedure.input(z.object({ password: z.string() })).query(async ({ input }) => {
       requireAdmin(input.password);
       return listSellerApplications();
     }),
+    overview: adminProcedure.input(z.object({ password: z.string() })).query(async ({ input }) => { requireAdmin(input.password); return getAdminOverview(); }),
+    products: adminProcedure.input(z.object({ password: z.string() })).query(async ({ input }) => { requireAdmin(input.password); return listAdminProducts(); }),
+    setFeatured: adminProcedure.input(z.object({ password: z.string(), id: z.number().int().positive(), isFeatured: z.boolean() })).mutation(async ({ input }) => { requireAdmin(input.password); return setProductFeatured(input.id, input.isFeatured); }),
+    deleteProduct: adminProcedure.input(z.object({ password: z.string(), id: z.number().int().positive() })).mutation(async ({ input }) => { requireAdmin(input.password); return deleteProduct(input.id); }),
+    renewSeller: adminProcedure.input(z.object({ password: z.string(), id: z.number().int().positive(), days: z.number().int().min(1).max(365).default(30) })).mutation(async ({ input }) => { requireAdmin(input.password); return renewSeller(input.id, input.days); }),
+    suspendSeller: adminProcedure.input(z.object({ password: z.string(), id: z.number().int().positive(), suspended: z.boolean() })).mutation(async ({ input }) => { requireAdmin(input.password); return setSellerSuspended(input.id, input.suspended); }),
+    slotUpgradeRequests: adminProcedure.input(z.object({ password: z.string() })).query(async ({ input }) => {
+      requireAdmin(input.password);
+      return listSlotUpgradeRequests();
+    }),
+    decideSlotUpgrade: adminProcedure.input(z.object({ password: z.string(), id: z.number().int().positive(), status: z.enum(["approved", "rejected"]) })).mutation(async ({ input }) => {
+      requireAdmin(input.password);
+      return decideSlotUpgradeRequest(input.id, input.status);
+    }),
     trialSettings: adminProcedure.input(z.object({ password: z.string() })).query(async ({ input }) => {
       requireAdmin(input.password);
       const settings = await getPlatformSettings();
       return { ...settings, used: await getActiveFreeTrialCount() };
     }),
-    updateTrialSettings: adminProcedure.input(z.object({ password: z.string(), maxFreeTrials: z.number().int().min(0).max(10000).optional(), isFreeTrialOpen: z.boolean().optional() })).mutation(async ({ input }) => {
+    updateTrialSettings: adminProcedure.input(z.object({ password: z.string(), maxFreeTrials: z.number().int().min(0).max(10000).optional(), isFreeTrialOpen: z.boolean().optional(), announcementText: z.string().max(1000).nullable().optional(), isAnnouncementActive: z.boolean().optional() })).mutation(async ({ input }) => {
       requireAdmin(input.password);
       if (input.maxFreeTrials !== undefined) {
         const used = await getActiveFreeTrialCount();
@@ -224,7 +278,8 @@ export const appRouter = router({
           if (!current.receiptUrl || !current.senderAccountName) throw new TRPCError({ code: "BAD_REQUEST", message: "لا يمكن التفعيل دون إيصال واسم صاحب الحساب" });
         }
       }
-      return decideSellerApplication(input.id, input.status, input.status === "approved" ? makeAccessToken() : undefined, input.status === "approved" && current.planType === "free_trial" ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : undefined);
+      const end = input.status === "approved" ? new Date(Date.now() + (current.planType === "yearly" ? 365 : 30) * 24 * 60 * 60 * 1000) : undefined;
+      return decideSellerApplication(input.id, input.status, input.status === "approved" ? makeAccessToken() : undefined, input.status === "approved" && current.planType === "free_trial" ? end : undefined, end);
     }),
   }),
 });

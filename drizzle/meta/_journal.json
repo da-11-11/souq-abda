@@ -36,6 +36,20 @@
       "when": 1795752912182,
       "tag": "0004_nosy_lionheart",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1795800004660,
+      "tag": "0005_lyrical_black_tom",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1795803170861,
+      "tag": "0006_soft_sharon_ventura",
+      "breakpoints": true
     }
   ]
 }

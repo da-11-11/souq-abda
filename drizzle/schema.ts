@@ -24,6 +24,8 @@ export const platformSettings = mysqlTable("platform_settings", {
   id: int("id").autoincrement().primaryKey(),
   maxFreeTrials: int("maxFreeTrials").default(30).notNull(),
   isFreeTrialOpen: boolean("isFreeTrialOpen").default(true).notNull(),
+  announcementText: text("announcementText"),
+  isAnnouncementActive: boolean("isAnnouncementActive").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -42,10 +44,26 @@ export const sellerApplications = mysqlTable("seller_applications", {
   senderAccountName: varchar("senderAccountName", { length: 160 }).notNull(),
   referenceNumber: varchar("referenceNumber", { length: 120 }),
   trialEndsAt: timestamp("trialEndsAt"),
-  status: mysqlEnum("status", ["pending", "approved", "rejected", "expired"])
+  expiresAt: timestamp("expiresAt"),
+  status: mysqlEnum("status", ["pending", "approved", "rejected", "suspended", "expired"])
     .default("pending")
     .notNull(),
   accessToken: varchar("accessToken", { length: 32 }).unique(),
+  maxProducts: int("maxProducts").default(5).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const slotUpgradeRequests = mysqlTable("slot_upgrade_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  sellerApplicationId: int("sellerApplicationId").notNull(),
+  planType: mysqlEnum("planType", ["single", "bundle"]).notNull(),
+  requestedSlots: int("requestedSlots").notNull(),
+  amount: varchar("amount", { length: 32 }).notNull(),
+  receiptUrl: text("receiptUrl").notNull(),
+  senderAccountName: varchar("senderAccountName", { length: 160 }).notNull(),
+  referenceNumber: varchar("referenceNumber", { length: 120 }),
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -63,6 +81,9 @@ export const products = mysqlTable("products", {
   imageUrl: text("imageUrl").notNull(),
   imageKey: varchar("imageKey", { length: 512 }),
   isVip: boolean("isVip").default(false).notNull(),
+  isFeatured: boolean("isFeatured").default(false).notNull(),
+  whatsappClicks: int("whatsappClicks").default(0).notNull(),
+  likesCount: int("likesCount").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -84,6 +105,8 @@ export type PlatformSetting = typeof platformSettings.$inferSelect;
 export type InsertPlatformSetting = typeof platformSettings.$inferInsert;
 export type SellerApplication = typeof sellerApplications.$inferSelect;
 export type InsertSellerApplication = typeof sellerApplications.$inferInsert;
+export type SlotUpgradeRequest = typeof slotUpgradeRequests.$inferSelect;
+export type InsertSlotUpgradeRequest = typeof slotUpgradeRequests.$inferInsert;
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = typeof products.$inferInsert;
 export type MediaFile = typeof mediaFiles.$inferSelect;

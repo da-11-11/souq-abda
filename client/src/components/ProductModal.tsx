@@ -1,14 +1,33 @@
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, Crown, Info, MapPin } from "lucide-react";
+import { MessageCircle, Crown, Info, MapPin, Heart } from "lucide-react";
 import { categoryLabel, type Product } from "@/data";
+import { trpc } from "@/lib/trpc";
+import { useEffect, useState } from "react";
 
-export function ProductModal({ product, isOpen, onClose }: { product: Product | null; isOpen: boolean; onClose: () => void }) {
+type ProductWithMetrics = Product & { likesCount?: number; whatsappClicks?: number };
+
+export function ProductModal({ product, isOpen, onClose }: { product: ProductWithMetrics | null; isOpen: boolean; onClose: () => void }) {
+  const [liked, setLiked] = useState(false);
+  const [likes, setLikes] = useState(0);
+  const likeMutation = trpc.seller.likeProduct.useMutation();
+  const clickMutation = trpc.seller.trackWhatsappClick.useMutation();
+  useEffect(() => { setLiked(false); setLikes(0); }, [product?.id]);
   if (!product) return null;
 
+  const currentLikes = likes || product.likesCount || 0;
+  const handleLike = () => {
+    if (liked) return;
+    setLiked(true);
+    setLikes(currentLikes + 1);
+    const id = Number(product.id);
+    if (Number.isInteger(id) && id > 0) void likeMutation.mutateAsync({ productId: id });
+  };
   const handleWhatsApp = () => {
     const text = encodeURIComponent(`مرحباً، أرغب بالاستفسار عن منتج "${product.name}" من متجر ${product.seller}، وسعره ${product.price}. هل المنتج متاح؟`);
     window.dispatchEvent(new CustomEvent("souq-whatsapp-click", { detail: { productId: product.id, productName: product.name, seller: product.seller, price: product.price } }));
+    const id = Number(product.id);
+    if (Number.isInteger(id) && id > 0) void clickMutation.mutateAsync({ productId: id });
     window.open(`https://wa.me/${product.sellerPhone}?text=${text}`, "_blank", "noopener,noreferrer");
   };
 
@@ -25,7 +44,7 @@ export function ProductModal({ product, isOpen, onClose }: { product: Product | 
             <div>
               <div className="flex items-center justify-between gap-4">
                 <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-primary md:px-3 md:text-sm">{categoryLabel(product.category)}</span>
-                <span className="text-xl font-black text-gray-950 md:text-2xl">{product.price}</span>
+                <div className="flex items-center gap-2"><button type="button" onClick={handleLike} className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-black ${liked ? "bg-red-500 text-white" : "bg-red-50 text-red-500"}`}><Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />{currentLikes}</button><span className="text-xl font-black text-gray-950 md:text-2xl">{product.price}</span></div>
               </div>
               <h2 className="mt-3 text-xl font-black leading-tight text-gray-950 md:mt-5 md:text-3xl">{product.name}</h2>
               <div className="mb-4 mt-3 flex items-center gap-2 border-b border-gray-100 pb-4 md:mb-6 md:mt-5 md:gap-3 md:pb-6">
