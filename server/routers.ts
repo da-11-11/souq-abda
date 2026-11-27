@@ -20,6 +20,7 @@ import {
   getPlatformSettings,
   getSellerApplicationById,
   getSellerApplicationByAccount,
+  ensureOwnerSellerApplication,
   getSellerApplicationByToken,
   getSellerProductStats,
   incrementProductMetric,
@@ -35,7 +36,6 @@ import {
   setSellerSuspended,
 } from "./db";
 
-const adminPassword = process.env.ADMIN_PANEL_PASSWORD ?? "admin2026";
 const MAX_ACTIVE_SELLERS = 30;
 
 const applicationInput = z.object({
@@ -84,9 +84,6 @@ const slotUpgradeInput = z.object({
   referenceNumber: z.string().trim().max(120).optional(),
 });
 
-function requireAdmin(password: string) {
-  if (password !== adminPassword) throw new TRPCError({ code: "FORBIDDEN", message: "بيانات الإدارة غير صحيحة" });
-}
 
 function makeAccessToken() {
   return `AB${randomBytes(4).toString("hex").toUpperCase()}`;
@@ -161,7 +158,8 @@ export const appRouter = router({
     }),
     loginWithAccount: adminProcedure.query(async ({ ctx }) => {
       if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: "يرجى تسجيل الدخول أولاً" });
-      const seller = await getSellerApplicationByAccount(ctx.user.id, ctx.user.email ?? undefined);
+      const isOwner = ctx.user.email?.toLowerCase() === "dawoodrababh2008@gmail.com";
+      const seller = isOwner ? await ensureOwnerSellerApplication({ userId: ctx.user.id, email: ctx.user.email!, fullName: ctx.user.name ?? undefined }) : await getSellerApplicationByAccount(ctx.user.id, ctx.user.email ?? undefined);
       if (!seller || seller.status !== "approved" || !seller.accessToken) {
         throw new TRPCError({ code: "NOT_FOUND", message: "لا يوجد متجر مفعّل مرتبط بهذا الحساب" });
       }
@@ -223,48 +221,41 @@ export const appRouter = router({
     }),
   }),
   admin: router({
-    applications: adminProcedure.input(z.object({ password: z.string() })).query(async ({ input }) => {
-      requireAdmin(input.password);
+    applications: adminProcedure.input(z.object({})).query(async ({ input }) => {
       return listSellerApplications();
     }),
-    overview: adminProcedure.input(z.object({ password: z.string() })).query(async ({ input }) => { requireAdmin(input.password); return getAdminOverview(); }),
-    products: adminProcedure.input(z.object({ password: z.string() })).query(async ({ input }) => { requireAdmin(input.password); return listAdminProducts(); }),
-    setFeatured: adminProcedure.input(z.object({ password: z.string(), id: z.number().int().positive(), isFeatured: z.boolean() })).mutation(async ({ input }) => { requireAdmin(input.password); return setProductFeatured(input.id, input.isFeatured); }),
-    deleteProduct: adminProcedure.input(z.object({ password: z.string(), id: z.number().int().positive() })).mutation(async ({ input }) => { requireAdmin(input.password); return deleteProduct(input.id); }),
-    renewSeller: adminProcedure.input(z.object({ password: z.string(), id: z.number().int().positive(), days: z.number().int().min(1).max(365).default(30) })).mutation(async ({ input }) => { requireAdmin(input.password); return renewSeller(input.id, input.days); }),
-    suspendSeller: adminProcedure.input(z.object({ password: z.string(), id: z.number().int().positive(), suspended: z.boolean() })).mutation(async ({ input }) => { requireAdmin(input.password); return setSellerSuspended(input.id, input.suspended); }),
-    slotUpgradeRequests: adminProcedure.input(z.object({ password: z.string() })).query(async ({ input }) => {
-      requireAdmin(input.password);
+    overview: adminProcedure.input(z.object({})).query(async ({ input }) => { return getAdminOverview(); }),
+    products: adminProcedure.input(z.object({})).query(async ({ input }) => { return listAdminProducts(); }),
+    setFeatured: adminProcedure.input(z.object({ id: z.number().int().positive(), isFeatured: z.boolean() })).mutation(async ({ input }) => { return setProductFeatured(input.id, input.isFeatured); }),
+    deleteProduct: adminProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input }) => { return deleteProduct(input.id); }),
+    renewSeller: adminProcedure.input(z.object({ id: z.number().int().positive(), days: z.number().int().min(1).max(365).default(30) })).mutation(async ({ input }) => { return renewSeller(input.id, input.days); }),
+    suspendSeller: adminProcedure.input(z.object({ id: z.number().int().positive(), suspended: z.boolean() })).mutation(async ({ input }) => { return setSellerSuspended(input.id, input.suspended); }),
+    slotUpgradeRequests: adminProcedure.input(z.object({})).query(async ({ input }) => {
       return listSlotUpgradeRequests();
     }),
-    decideSlotUpgrade: adminProcedure.input(z.object({ password: z.string(), id: z.number().int().positive(), status: z.enum(["approved", "rejected"]) })).mutation(async ({ input }) => {
-      requireAdmin(input.password);
+    decideSlotUpgrade: adminProcedure.input(z.object({ id: z.number().int().positive(), status: z.enum(["approved", "rejected"]) })).mutation(async ({ input }) => {
       return decideSlotUpgradeRequest(input.id, input.status);
     }),
-    trialSettings: adminProcedure.input(z.object({ password: z.string() })).query(async ({ input }) => {
-      requireAdmin(input.password);
+    trialSettings: adminProcedure.input(z.object({})).query(async ({ input }) => {
       const settings = await getPlatformSettings();
       return { ...settings, used: await getActiveFreeTrialCount() };
     }),
-    updateTrialSettings: adminProcedure.input(z.object({ password: z.string(), maxFreeTrials: z.number().int().min(0).max(10000).optional(), isFreeTrialOpen: z.boolean().optional(), announcementText: z.string().max(1000).nullable().optional(), isAnnouncementActive: z.boolean().optional() })).mutation(async ({ input }) => {
-      requireAdmin(input.password);
+    updateTrialSettings: adminProcedure.input(z.object({ maxFreeTrials: z.number().int().min(0).max(10000).optional(), isFreeTrialOpen: z.boolean().optional(), announcementText: z.string().max(1000).nullable().optional(), isAnnouncementActive: z.boolean().optional() })).mutation(async ({ input }) => {
       if (input.maxFreeTrials !== undefined) {
         const used = await getActiveFreeTrialCount();
         if (input.maxFreeTrials < used) throw new TRPCError({ code: "BAD_REQUEST", message: `لا يمكن ضبط الحد الأقصى أقل من المقاعد المستخدمة (${used})` });
       }
-      const { password: _password, ...changes } = input;
+      const changes = input;
       return updatePlatformSettings(changes);
     }),
-    grantFreeTrial: adminProcedure.input(z.object({ password: z.string(), projectName: z.string().trim().min(2).max(160), whatsapp: z.string().trim().min(8).max(32), userEmail: z.string().email().optional() })).mutation(async ({ input }) => {
-      requireAdmin(input.password);
+    grantFreeTrial: adminProcedure.input(z.object({ projectName: z.string().trim().min(2).max(160), whatsapp: z.string().trim().min(8).max(32), userEmail: z.string().email().optional() })).mutation(async ({ input }) => {
       const settings = await getPlatformSettings();
       const used = await getActiveFreeTrialCount();
       if (used >= (settings?.maxFreeTrials ?? 30)) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "لا توجد مقاعد مجانية متاحة" });
       const accessToken = makeAccessToken();
       return createDirectFreeTrial({ projectName: input.projectName, whatsapp: input.whatsapp, userEmail: input.userEmail, accessToken, trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     }),
-    decideApplication: adminProcedure.input(z.object({ password: z.string(), id: z.number().int().positive(), status: z.enum(["approved", "rejected"]) })).mutation(async ({ input }) => {
-      requireAdmin(input.password);
+    decideApplication: adminProcedure.input(z.object({ id: z.number().int().positive(), status: z.enum(["approved", "rejected"]) })).mutation(async ({ input }) => {
       const current = await getSellerApplicationById(input.id);
       if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "طلب البائع غير موجود" });
       if (input.status === "approved" && current.status !== "approved") {

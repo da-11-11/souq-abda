@@ -171,6 +171,29 @@ export async function getSellerApplicationByAccount(userId: number, email?: stri
   return seller;
 }
 
+export async function ensureOwnerSellerApplication(input: { userId: number; email: string; fullName?: string }) {
+  const existing = await getSellerApplicationByAccount(input.userId, input.email);
+  if (existing) return existing;
+  const db = await requireDb();
+  const accessToken = "ABOWNER01";
+  const result = await db.insert(sellerApplications).values({
+    userId: input.userId,
+    userEmail: input.email,
+    fullName: input.fullName || "مدير سوق أبدع",
+    projectName: "متجر سوق أبدع",
+    whatsapp: "0781410388",
+    category: "other",
+    description: "متجر الإدارة الرئيسي في سوق أبدع",
+    planType: "monthly",
+    receiptUrl: "",
+    senderAccountName: "إدارة سوق أبدع",
+    status: "approved",
+    accessToken,
+    maxProducts: 150,
+  });
+  return getSellerApplicationById(Number((result as unknown as [{ insertId: number }])[0]?.insertId));
+}
+
 export async function getActiveSellerCount() {
   const db = await requireDb();
   const result = await db.select({ value: count() }).from(sellerApplications).where(and(eq(sellerApplications.status, "approved"), or(ne(sellerApplications.planType, "free_trial"), gt(sellerApplications.trialEndsAt, new Date()))));
