@@ -19,26 +19,26 @@ export default function SellerRegister() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 px-4 py-8 text-[#1A1A1A]" dir="rtl">
+    <main className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 px-3 py-4 text-[#1A1A1A] sm:px-4 sm:py-8" dir="rtl">
       <div className="mx-auto max-w-6xl">
-        <header className="mb-8 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 text-primary transition-opacity hover:opacity-80">
-            <span className="rounded-2xl bg-orange-100 p-3"><ShoppingBag className="h-7 w-7 text-primary" /></span>
-            <span className="text-2xl font-black text-primary">سوق أبدع</span>
+        <header className="mb-5 flex items-center justify-between sm:mb-8">
+          <Link href="/" className="flex items-center gap-2 text-primary transition-opacity hover:opacity-80 sm:gap-3">
+            <span className="rounded-xl bg-orange-100 p-2 sm:rounded-2xl sm:p-3"><ShoppingBag className="h-6 w-6 text-primary sm:h-7 sm:w-7" /></span>
+            <span className="text-xl font-black text-primary sm:text-2xl">سوق أبدع</span>
           </Link>
-          <Link href="/" className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary"><ArrowRight className="h-4 w-4" />العودة للمتجر</Link>
+          <Link href="/" className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary sm:gap-2 sm:text-sm"><ArrowRight className="h-4 w-4" />العودة للمتجر</Link>
         </header>
 
-        <section className="mb-8 rounded-[2rem] border border-primary/15 bg-white p-6 shadow-xl sm:p-10">
+        <section className="mb-5 rounded-3xl border border-primary/15 bg-white p-4 shadow-xl sm:mb-8 sm:rounded-[2rem] sm:p-10">
           <div className="max-w-3xl">
-            <p className="mb-3 text-sm font-bold tracking-[0.2em] text-primary">بوابة الحرفيين الأردنيين</p>
-            <h1 className="text-3xl font-black leading-tight sm:text-5xl">حوّل موهبتك إلى متجر يصل إلى عملاء جدد</h1>
-            <p className="mt-4 max-w-2xl text-base leading-8 text-gray-600">سجّل حسابك بأمان عبر Manus، ثم أرسل بيانات مشروعك واختر التجربة المجانية أو الباقة المناسبة.</p>
+            <p className="mb-2 text-xs font-bold tracking-[0.12em] text-primary sm:mb-3 sm:text-sm sm:tracking-[0.2em]">بوابة الحرفيين الأردنيين</p>
+            <h1 className="text-2xl font-black leading-tight sm:text-5xl">حوّل موهبتك إلى متجر يصل إلى عملاء جدد</h1>
+            <p className="mt-3 text-sm leading-7 text-gray-600 sm:mt-4 sm:max-w-2xl sm:text-base sm:leading-8">سجّل حسابك بأمان عبر Manus، ثم أرسل بيانات مشروعك واختر التجربة المجانية أو الباقة المناسبة.</p>
           </div>
         </section>
 
         {!isAuthenticated ? (
-          <section className="mx-auto max-w-2xl rounded-[2rem] bg-white p-8 text-[#1A1A1A] shadow-2xl sm:p-12">
+          <section className="mx-auto max-w-2xl rounded-3xl bg-white p-5 text-[#1A1A1A] shadow-2xl sm:rounded-[2rem] sm:p-12">
             <div className="mx-auto max-w-md text-center">
               <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100"><LogIn className="h-8 w-8 text-primary" /></div>
               <h2 className="text-2xl font-black">ابدأ بتسجيل حسابك</h2>
@@ -48,22 +48,22 @@ export default function SellerRegister() {
             </div>
           </section>
         ) : applicationQuery.data?.status === "pending" ? (
-          <section className="mx-auto max-w-2xl rounded-[2rem] bg-white p-10 text-center shadow-2xl">
+          <section className="mx-auto max-w-2xl rounded-3xl bg-white p-5 text-center shadow-2xl sm:rounded-[2rem] sm:p-10">
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600"><CheckCircle2 className="h-8 w-8" /></div>
             <h2 className="text-2xl font-black">طلبك قيد المراجعة</h2>
             <p className="mt-4 leading-8 text-gray-600">طلبك قيد المراجعة من قبل الإدارة، سيتم تفعيل صلاحية إضافة مشروعك فور الموافقة.</p>
             <p className="mt-3 text-sm text-gray-400" dir="ltr">{user?.email}</p>
           </section>
         ) : applicationQuery.data?.status === "approved" ? (
-          <section className="mx-auto max-w-2xl rounded-[2rem] bg-white p-10 text-center shadow-2xl">
+          <section className="mx-auto max-w-2xl rounded-3xl bg-white p-5 text-center shadow-2xl sm:rounded-[2rem] sm:p-10">
             <CheckCircle2 className="mx-auto mb-5 h-16 w-16 text-green-600" />
             <h2 className="text-2xl font-black">متجرك مفعّل</h2>
             <p className="mt-4 leading-8 text-gray-600">يمكنك الآن إدارة متجرك وإضافة منتجاتك.</p>
-            <Link href="/seller/dashboard" className="mt-7 inline-flex rounded-full bg-gradient-to-r from-secondary to-primary px-7 py-3 font-bold text-white">لوحة متجري</Link>
+            <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row"><Link href="/seller/login" className="inline-flex items-center justify-center rounded-full border-2 border-primary px-6 py-3 font-bold text-primary">دخول إلى صفحة البائع</Link><Link href="/seller/dashboard" className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-secondary to-primary px-7 py-3 font-bold text-white">لوحة متجري</Link></div>
           </section>
         ) : (
-          <section className="rounded-[2rem] bg-white p-4 text-[#1A1A1A] shadow-2xl sm:p-8">
-            <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[#D4AF37]/30 bg-[#fffaf0] p-5 sm:flex-row sm:items-center sm:justify-between">
+          <section className="rounded-3xl bg-white p-3 text-[#1A1A1A] shadow-2xl sm:rounded-[2rem] sm:p-8">
+            <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-[#D4AF37]/30 bg-[#fffaf0] p-4 sm:mb-6 sm:gap-4 sm:p-5 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-sm font-bold text-[#9c7d12]">تم تسجيل الدخول بالحساب الموحد</p>
                 <h2 className="mt-1 text-xl font-black">مرحباً، {user?.name || "بائع سوق أبدع"}</h2>

@@ -157,7 +157,7 @@ export const appRouter = router({
         description: input.description,
         planType: input.planType,
         receiptUrl: receiptUrl ?? "",
-        senderAccountName: input.senderAccountName || input.fullName,
+        senderAccountName: isFreeTrial ? "" : input.senderAccountName!,
         referenceNumber: input.referenceNumber,
         trialEndsAt: isFreeTrial ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : undefined,
       } as Parameters<typeof createSellerApplication>[0]);
