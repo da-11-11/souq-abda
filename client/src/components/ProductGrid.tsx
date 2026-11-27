@@ -46,20 +46,20 @@ export function ProductGrid({ selectedCategory }: { selectedCategory: string | n
         </div>
         {isLoading && <div className="py-12 text-center text-gray-400">جارٍ تحميل أحدث المنتجات...</div>}
         {!isLoading && filtered.length === 0 && <div className="flex flex-col items-center gap-4 py-20 text-gray-400"><PackageSearch className="h-12 w-12" />لا توجد منتجات في هذه الفئة حالياً</div>}
-        {!isLoading && filtered.length > 0 && <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+        {!isLoading && filtered.length > 0 && <div className="grid grid-cols-2 gap-2.5 sm:gap-6 lg:grid-cols-4">
           {filtered.map((product, index) => {
             const favorite = favorites.includes(product.id);
-            return <motion.article key={product.id} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.06 }} onClick={() => setSelected(product)} className="group cursor-pointer overflow-hidden rounded-[1.75rem] border border-gray-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
-              <div className="relative aspect-[4/3] overflow-hidden bg-orange-50">
+            return <motion.article key={product.id} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: index * 0.06 }} onClick={() => setSelected(product)} className="group cursor-pointer overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl sm:rounded-[1.75rem]">
+              <div className="relative aspect-square overflow-hidden bg-orange-50 sm:aspect-[4/3]">
                 <img src={product.image} alt={product.name} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
-                {product.isVIP && <span className="absolute right-4 top-4 rounded-full bg-[#ffb300] px-3 py-1 text-xs font-black"><Crown className="inline h-3 w-3" /> مميز</span>}
-                <button type="button" aria-label="المفضلة" onClick={(event) => { event.stopPropagation(); setFavorites((current) => favorite ? current.filter((id) => id !== product.id) : [...current, product.id]); }} className={`absolute left-4 top-4 rounded-full p-2.5 ${favorite ? "bg-red-500 text-white" : "bg-white/90 text-gray-500"}`}><Heart className={`h-5 w-5 ${favorite ? "fill-current" : ""}`} /></button>
+                {product.isVIP && <span className="absolute right-2 top-2 rounded-full bg-[#ffb300] px-2 py-0.5 text-[10px] font-black sm:right-4 sm:top-4 sm:px-3 sm:py-1 sm:text-xs"><Crown className="inline h-3 w-3" /> مميز</span>}
+                <button type="button" aria-label="المفضلة" onClick={(event) => { event.stopPropagation(); setFavorites((current) => favorite ? current.filter((id) => id !== product.id) : [...current, product.id]); }} className={`absolute left-2 top-2 rounded-full p-1.5 ${favorite ? "bg-red-500 text-white" : "bg-white/90 text-gray-500"} sm:left-4 sm:top-4 sm:p-2.5`}><Heart className={`h-4 w-4 sm:h-5 sm:w-5 ${favorite ? "fill-current" : ""}`} /></button>
               </div>
-              <div className="flex min-h-[210px] flex-col p-5">
-                <div className="mb-3 flex justify-between gap-3"><span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-primary">{product.seller}</span><b>{product.price}</b></div>
-                <h3 className="text-xl font-black group-hover:text-primary">{product.name}</h3>
-                <p className="mt-2 flex-1 text-sm leading-7 text-gray-500">{product.shortDescription}</p>
-                <div className="border-t pt-4 text-sm font-bold text-primary">عرض التفاصيل ←</div>
+              <div className="flex min-h-[165px] flex-col p-2.5 sm:min-h-[210px] sm:p-5">
+                <div className="mb-1.5 flex items-center justify-between gap-1 sm:mb-3 sm:gap-3"><span className="max-w-[62%] truncate rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold text-primary sm:px-3 sm:py-1 sm:text-xs">{product.seller}</span><b className="shrink-0 text-xs sm:text-base">{product.price}</b></div>
+                <h3 className="line-clamp-2 text-sm font-black leading-5 group-hover:text-primary sm:text-xl sm:leading-normal">{product.name}</h3>
+                <p className="mt-1 line-clamp-2 flex-1 text-xs leading-5 text-gray-500 sm:mt-2 sm:text-sm sm:leading-7">{product.shortDescription}</p>
+                <div className="border-t pt-2 text-[11px] font-bold text-primary sm:pt-4 sm:text-sm">عرض التفاصيل ←</div>
               </div>
             </motion.article>;
           })}
