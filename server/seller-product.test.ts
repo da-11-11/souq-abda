@@ -12,6 +12,7 @@ const dbMocks = vi.hoisted(() => ({
   getSellerProductStats: vi.fn(),
   getPlatformSettings: vi.fn(),
   getActiveFreeTrialCount: vi.fn(),
+  recordWhatsappClick: vi.fn(),
 }));
 
 const storageMocks = vi.hoisted(() => ({
@@ -59,6 +60,7 @@ describe("seller marketplace procedures", () => {
     dbMocks.createProduct.mockResolvedValue(44);
     dbMocks.createMediaFile.mockResolvedValue(undefined);
     dbMocks.getSellerProductStats.mockResolvedValue({ productCount: 0, whatsappClicks: 0, likesCount: 0, products: [] });
+    dbMocks.recordWhatsappClick.mockResolvedValue({ likesCount: 0, whatsappClicks: 1, counted: true });
     storageMocks.storagePut.mockResolvedValue({ key: "products/7/item.png", url: "/manus-storage/products/7/item.png" });
     storageMocks.storagePutReceipt.mockResolvedValue({ url: "/manus-storage/receipts/item.png" });
   });
@@ -107,6 +109,16 @@ describe("seller marketplace procedures", () => {
     expect(storageMocks.storagePut).toHaveBeenCalledOnce();
     expect(dbMocks.createProduct).toHaveBeenCalledWith(expect.objectContaining({ imageKey: "products/7/item.png" }));
     expect(dbMocks.createMediaFile).toHaveBeenCalledWith(expect.objectContaining({ productId: 44, storageKey: "products/7/item.png" }));
+  });
+
+  it("records one WhatsApp event identity per product", async () => {
+    const caller = appRouter.createCaller(sellerContext);
+    await caller.seller.trackWhatsappClick({ productId: 44, visitorKey: "visitor-key-123456" });
+    expect(dbMocks.recordWhatsappClick).toHaveBeenCalledWith(44, "user:99");
+
+    const anonymousCaller = appRouter.createCaller(context);
+    await anonymousCaller.seller.trackWhatsappClick({ productId: 44, visitorKey: "visitor-key-123456" });
+    expect(dbMocks.recordWhatsappClick).toHaveBeenLastCalledWith(44, "visitor:visitor-key-123456");
   });
 
   it("protects the admin application list with the configured password", async () => {

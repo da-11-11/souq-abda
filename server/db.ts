@@ -8,6 +8,7 @@ import {
   sellerApplications,
   slotUpgradeRequests,
   type User,
+  whatsappClickEvents,
   users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -210,6 +211,7 @@ export async function decideSellerApplication(id: number, status: "approved" | "
 
 export async function updateSellerApplicationProfile(input: {
   id: number;
+  fullName?: string;
   projectName: string;
   whatsapp?: string;
   socialUrl?: string;
@@ -217,7 +219,7 @@ export async function updateSellerApplicationProfile(input: {
   description: string;
 }) {
   const db = await requireDb();
-  await db.update(sellerApplications).set({ projectName: input.projectName, whatsapp: input.whatsapp || null, socialUrl: input.socialUrl || null, category: input.category, description: input.description }).where(eq(sellerApplications.id, input.id));
+  await db.update(sellerApplications).set({ fullName: input.fullName, projectName: input.projectName, whatsapp: input.whatsapp || null, socialUrl: input.socialUrl || null, category: input.category, description: input.description }).where(eq(sellerApplications.id, input.id));
   return getSellerApplicationById(input.id);
 }
 
@@ -307,6 +309,19 @@ export async function incrementProductMetric(productId: number, metric: "likesCo
   }
   const result = await db.select({ likesCount: products.likesCount, whatsappClicks: products.whatsappClicks }).from(products).where(eq(products.id, productId)).limit(1);
   return result[0];
+}
+
+export async function recordWhatsappClick(productId: number, identityKey: string) {
+  const db = await requireDb();
+  const insertResult = await db.insert(whatsappClickEvents).values({ productId, identityKey }).onDuplicateKeyUpdate({
+    set: { identityKey: sql`${whatsappClickEvents.identityKey}` },
+  });
+  const affectedRows = Number((insertResult as unknown as [{ affectedRows?: number }])[0]?.affectedRows ?? 0);
+  if (affectedRows > 0) {
+    await db.update(products).set({ whatsappClicks: sql`${products.whatsappClicks} + 1` }).where(eq(products.id, productId));
+  }
+  const result = await db.select({ likesCount: products.likesCount, whatsappClicks: products.whatsappClicks }).from(products).where(eq(products.id, productId)).limit(1);
+  return { ...result[0], counted: affectedRows > 0 };
 }
 
 export async function createProduct(input: {

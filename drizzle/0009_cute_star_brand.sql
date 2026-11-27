@@ -1,0 +1,2 @@
+ALTER TABLE `whatsapp_click_events` DROP INDEX `whatsapp_click_events_identityKey_unique`;--> statement-breakpoint
+ALTER TABLE `whatsapp_click_events` ADD CONSTRAINT `whatsapp_click_events_product_identity_unique` UNIQUE(`productId`,`identityKey`);

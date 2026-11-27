@@ -5,6 +5,7 @@ import {
   mysqlTable,
   text,
   timestamp,
+  uniqueIndex,
   varchar,
 } from "drizzle-orm/mysql-core";
 
@@ -89,6 +90,15 @@ export const products = mysqlTable("products", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+export const whatsappClickEvents = mysqlTable("whatsapp_click_events", {
+  id: int("id").autoincrement().primaryKey(),
+  productId: int("productId").notNull(),
+  identityKey: varchar("identityKey", { length: 191 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  productIdentityUnique: uniqueIndex("whatsapp_click_events_product_identity_unique").on(table.productId, table.identityKey),
+}));
+
 export const mediaFiles = mysqlTable("media_files", {
   id: int("id").autoincrement().primaryKey(),
   productId: int("productId").notNull(),
@@ -110,5 +120,7 @@ export type SlotUpgradeRequest = typeof slotUpgradeRequests.$inferSelect;
 export type InsertSlotUpgradeRequest = typeof slotUpgradeRequests.$inferInsert;
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = typeof products.$inferInsert;
+export type WhatsappClickEvent = typeof whatsappClickEvents.$inferSelect;
+export type InsertWhatsappClickEvent = typeof whatsappClickEvents.$inferInsert;
 export type MediaFile = typeof mediaFiles.$inferSelect;
 export type InsertMediaFile = typeof mediaFiles.$inferInsert;

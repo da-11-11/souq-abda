@@ -29,6 +29,7 @@ import {
   listAdminProducts,
   listSlotUpgradeRequests,
   listSellerApplications,
+  recordWhatsappClick,
   updatePlatformSettings,
   updateSellerApplicationProfile,
   setProductFeatured,
@@ -64,6 +65,11 @@ const profileInput = z.object({
   socialUrl: z.string().trim().max(500).optional(),
   category: z.string().trim().min(1).max(64),
   description: z.string().trim().min(10).max(5000),
+});
+
+const whatsappClickInput = z.object({
+  productId: z.number().int().positive(),
+  visitorKey: z.string().trim().min(16).max(128).optional(),
 });
 
 const productInput = z.object({
@@ -199,7 +205,7 @@ export const appRouter = router({
       if (!seller || seller.status !== "approved") throw new TRPCError({ code: "UNAUTHORIZED", message: "انتهت صلاحية جلسة البائع" });
       if (!canManageSeller(ctx.user, seller)) throw new TRPCError({ code: "FORBIDDEN", message: "لا تملك صلاحية إدارة هذا المتجر" });
       if (!input.whatsapp?.trim() && !input.socialUrl?.trim()) throw new TRPCError({ code: "BAD_REQUEST", message: "يرجى إدخال رقم واتساب أو رابط حساب إنستغرام/فيسبوك للتواصل" });
-      return updateSellerApplicationProfile({ id: seller.id, projectName: input.projectName, whatsapp: formatJordanWhatsappNumber(input.whatsapp) ?? undefined, socialUrl: input.socialUrl?.trim() || undefined, category: input.category, description: input.description });
+      return updateSellerApplicationProfile({ id: seller.id, fullName: input.fullName, projectName: input.projectName, whatsapp: formatJordanWhatsappNumber(input.whatsapp) ?? undefined, socialUrl: input.socialUrl?.trim() || undefined, category: input.category, description: input.description });
     }),
     createProduct: protectedProcedure.input(productInput).mutation(async ({ input, ctx }) => {
       const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
@@ -249,7 +255,11 @@ export const appRouter = router({
       return deleteSellerProduct(input.id, seller.id);
     }),
     likeProduct: publicProcedure.input(z.object({ productId: z.number().int().positive() })).mutation(({ input }) => incrementProductMetric(input.productId, "likesCount")),
-    trackWhatsappClick: publicProcedure.input(z.object({ productId: z.number().int().positive() })).mutation(({ input }) => incrementProductMetric(input.productId, "whatsappClicks")),
+    trackWhatsappClick: publicProcedure.input(whatsappClickInput).mutation(({ input, ctx }) => {
+      const identityKey = ctx.user ? `user:${ctx.user.id}` : input.visitorKey ? `visitor:${input.visitorKey}` : null;
+      if (!identityKey) throw new TRPCError({ code: "BAD_REQUEST", message: "تعذر التحقق من هوية الزائر" });
+      return recordWhatsappClick(input.productId, identityKey);
+    }),
     productStats: protectedProcedure.input(z.object({ accessToken: z.string().trim().min(4).max(32) })).query(async ({ input, ctx }) => {
       const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());
       if (!seller || seller.status !== "approved") throw new TRPCError({ code: "UNAUTHORIZED", message: "انتهت صلاحية جلسة البائع" });
