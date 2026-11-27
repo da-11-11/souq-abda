@@ -9,6 +9,7 @@ import { trpc } from "@/lib/trpc";
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, isAuthenticated } = useAuth();
+  const isAdmin = user?.email?.toLowerCase() === "dawoodrababh2008@gmail.com";
   const accountQuery = trpc.seller.loginWithAccount.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const login = () => startLogin();
 
@@ -41,6 +42,7 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           {!isAuthenticated ? <Button onClick={login} variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5">تسجيل الدخول</Button> : <div className="hidden max-w-40 text-right lg:block"><b className="block truncate text-sm text-gray-800">{user?.name || "حسابي"}</b><span className="block truncate text-xs text-gray-400" dir="ltr">{user?.email}</span></div>}
           {isAuthenticated && accountQuery.data ? <Button asChild variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5"><Link href="/seller/dashboard">لوحة متجري</Link></Button> : <Button asChild variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5"><Link href="/register-seller">أضف مشروعك</Link></Button>}
+          {isAdmin && <Button asChild variant="outline" className="rounded-full border-orange-300 px-5 py-5 text-primary hover:bg-orange-50"><Link href="/admin">لوحة الإدارة</Link></Button>}
           <Button asChild className="rounded-full bg-gradient-to-r from-secondary to-primary text-white font-medium px-6 py-5 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:-translate-y-0.5"><Link href="/register-seller">سجّل مشروعك</Link></Button>
         </div>
 
@@ -73,6 +75,7 @@ export function Navbar() {
             {isAuthenticated && accountQuery.data ? <Link href="/seller/dashboard" onClick={() => setIsMenuOpen(false)}>لوحة متجري</Link> : <Link href="/register-seller" onClick={() => setIsMenuOpen(false)}>أضف مشروعك</Link>}
           </Button>
           <Button asChild className="w-full rounded-full bg-gradient-to-r from-secondary to-primary text-white font-medium py-6 text-lg mt-2"><Link href="/register-seller" onClick={() => setIsMenuOpen(false)}>سجّل مشروعك</Link></Button>
+          {isAdmin && <Button asChild variant="outline" className="w-full rounded-full border-orange-300 py-6 text-lg text-primary"><Link href="/admin" onClick={() => setIsMenuOpen(false)}>لوحة الإدارة</Link></Button>}
         </div>
       )}
     </nav>

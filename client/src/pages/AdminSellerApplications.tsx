@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { categories } from "@/data";
 import { trpc } from "@/lib/trpc";
 import { Check, CheckCircle2, Clock, Copy, ExternalLink, Gift, Inbox, Lock, Store, X, XCircle } from "lucide-react";
 
 export default function AdminSellerApplications() {
+  const { user, loading } = useAuth();
+  const [, navigate] = useLocation();
+  const isAdmin = user?.email?.toLowerCase() === "dawoodrababh2008@gmail.com";
   const [auth, setAuth] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -13,12 +18,13 @@ export default function AdminSellerApplications() {
   const [grantWhatsapp, setGrantWhatsapp] = useState("");
   const [grantEmail, setGrantEmail] = useState("");
   const [maxSeats, setMaxSeats] = useState(30);
-  const applicationsQuery = trpc.admin.applications.useQuery({ password }, { enabled: auth, retry: false });
-  const trialSettingsQuery = trpc.admin.trialSettings.useQuery({ password }, { enabled: auth, retry: false });
+  const applicationsQuery = trpc.admin.applications.useQuery({ password }, { enabled: auth && isAdmin, retry: false });
+  const trialSettingsQuery = trpc.admin.trialSettings.useQuery({ password }, { enabled: auth && isAdmin, retry: false });
   const decideMutation = trpc.admin.decideApplication.useMutation();
   const settingsMutation = trpc.admin.updateTrialSettings.useMutation();
   const grantMutation = trpc.admin.grantFreeTrial.useMutation();
   useEffect(() => { if (trialSettingsQuery.data?.maxFreeTrials !== undefined) setMaxSeats(trialSettingsQuery.data.maxFreeTrials); }, [trialSettingsQuery.data?.maxFreeTrials]);
+  useEffect(() => { if (!loading && !isAdmin) navigate("/"); }, [loading, isAdmin, navigate]);
 
   const login = (event: React.FormEvent) => { event.preventDefault(); if (!password.trim()) { setError("أدخل كلمة مرور الإدارة."); return; } setError(""); setAuth(true); };
   const refresh = async () => { await Promise.all([applicationsQuery.refetch(), trialSettingsQuery.refetch()]); };
@@ -26,7 +32,8 @@ export default function AdminSellerApplications() {
   const updateSettings = async (changes: { maxFreeTrials?: number; isFreeTrialOpen?: boolean }) => { try { await settingsMutation.mutateAsync({ password, ...changes }); await trialSettingsQuery.refetch(); setError(""); } catch (cause) { setError(cause instanceof Error ? cause.message : "تعذر تحديث إعدادات التجربة"); } };
   const grant = async (event: React.FormEvent) => { event.preventDefault(); try { const result = await grantMutation.mutateAsync({ password, projectName: grantName, whatsapp: grantWhatsapp, userEmail: grantEmail || undefined }); await refresh(); setShowGrant(false); setGrantName(""); setGrantWhatsapp(""); setGrantEmail(""); setError(result?.accessToken ? `تم منح التجربة بنجاح. الرمز السري: ${result.accessToken}` : "تم منح التجربة بنجاح"); } catch (cause) { setError(cause instanceof Error ? cause.message : "تعذر منح التجربة المجانية"); } };
 
-  if (!auth) return <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4" dir="rtl"><form onSubmit={login} className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl"><Lock className="mx-auto mb-4 h-12 w-12 text-primary" /><h1 className="text-center text-2xl font-black">الإدارة المركزية</h1><p className="my-3 text-center text-sm text-gray-500">أدخل كلمة مرور الإدارة للوصول إلى طلبات الاشتراك.</p><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="input mb-3 text-center" placeholder="كلمة المرور" />{error && <p className="mb-3 text-center text-sm text-red-500">{error}</p>}<button className="w-full rounded-xl bg-primary py-3 font-bold text-white">دخول</button></form></div>;
+  if (loading || !isAdmin) return <div className="flex min-h-screen items-center justify-center bg-orange-50 text-primary" dir="rtl">جارٍ التحقق من صلاحية المدير...</div>;
+  if (!auth) return <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4" dir="rtl"><form onSubmit={login} className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl"><Lock className="mx-auto mb-4 h-12 w-12 text-primary" /><h1 className="text-center text-2xl font-black">الإدارة المركزية</h1><p className="my-3 text-center text-sm text-gray-500">تم التحقق من بريد المدير. أدخل كلمة مرور الإدارة للمتابعة.</p><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="input mb-3 text-center" placeholder="كلمة المرور" />{error && <p className="mb-3 text-center text-sm text-red-500">{error}</p>}<button className="w-full rounded-xl bg-primary py-3 font-bold text-white">دخول</button></form></div>;
 
   const items = applicationsQuery.data ?? [];
   const used = trialSettingsQuery.data?.used ?? 0;

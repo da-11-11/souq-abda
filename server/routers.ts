@@ -4,7 +4,7 @@ import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import { storagePut, storagePutReceipt, validateReceiptUpload } from "./storage";
 import {
   createMediaFile,
@@ -183,16 +183,16 @@ export const appRouter = router({
     }),
   }),
   admin: router({
-    applications: publicProcedure.input(z.object({ password: z.string() })).query(async ({ input }) => {
+    applications: adminProcedure.input(z.object({ password: z.string() })).query(async ({ input }) => {
       requireAdmin(input.password);
       return listSellerApplications();
     }),
-    trialSettings: publicProcedure.input(z.object({ password: z.string() })).query(async ({ input }) => {
+    trialSettings: adminProcedure.input(z.object({ password: z.string() })).query(async ({ input }) => {
       requireAdmin(input.password);
       const settings = await getPlatformSettings();
       return { ...settings, used: await getActiveFreeTrialCount() };
     }),
-    updateTrialSettings: publicProcedure.input(z.object({ password: z.string(), maxFreeTrials: z.number().int().min(0).max(10000).optional(), isFreeTrialOpen: z.boolean().optional() })).mutation(async ({ input }) => {
+    updateTrialSettings: adminProcedure.input(z.object({ password: z.string(), maxFreeTrials: z.number().int().min(0).max(10000).optional(), isFreeTrialOpen: z.boolean().optional() })).mutation(async ({ input }) => {
       requireAdmin(input.password);
       if (input.maxFreeTrials !== undefined) {
         const used = await getActiveFreeTrialCount();
@@ -201,7 +201,7 @@ export const appRouter = router({
       const { password: _password, ...changes } = input;
       return updatePlatformSettings(changes);
     }),
-    grantFreeTrial: publicProcedure.input(z.object({ password: z.string(), projectName: z.string().trim().min(2).max(160), whatsapp: z.string().trim().min(8).max(32), userEmail: z.string().email().optional() })).mutation(async ({ input }) => {
+    grantFreeTrial: adminProcedure.input(z.object({ password: z.string(), projectName: z.string().trim().min(2).max(160), whatsapp: z.string().trim().min(8).max(32), userEmail: z.string().email().optional() })).mutation(async ({ input }) => {
       requireAdmin(input.password);
       const settings = await getPlatformSettings();
       const used = await getActiveFreeTrialCount();
@@ -209,7 +209,7 @@ export const appRouter = router({
       const accessToken = makeAccessToken();
       return createDirectFreeTrial({ projectName: input.projectName, whatsapp: input.whatsapp, userEmail: input.userEmail, accessToken, trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) });
     }),
-    decideApplication: publicProcedure.input(z.object({ password: z.string(), id: z.number().int().positive(), status: z.enum(["approved", "rejected"]) })).mutation(async ({ input }) => {
+    decideApplication: adminProcedure.input(z.object({ password: z.string(), id: z.number().int().positive(), status: z.enum(["approved", "rejected"]) })).mutation(async ({ input }) => {
       requireAdmin(input.password);
       const current = await getSellerApplicationById(input.id);
       if (!current) throw new TRPCError({ code: "NOT_FOUND", message: "طلب البائع غير موجود" });
