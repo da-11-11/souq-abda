@@ -41,7 +41,17 @@ export function SellerForm() {
     if (!values.whatsapp.trim() && !values.socialUrl.trim()) { setSubmitError("يرجى إدخال رقم واتساب أو رابط حساب إنستغرام/فيسبوك للتواصل"); return; }
     if (!isTrial && (!receiptFile || !receiptData)) { setSubmitError("يرجى رفع صورة إيصال التحويل قبل الإرسال."); return; }
     if (!isTrial && !values.senderAccountName.trim()) { setSubmitError("اسم صاحب الحساب المحوّل إجباري."); return; }
-    try { await submitMutation.mutateAsync({ ...values, planType, ...(isTrial ? {} : { receiptData, receiptFileName: receiptFile?.name, receiptMimeType: receiptFile?.type as "image/jpeg" | "image/png" }) }); setSubmitted(true); } catch (error) { setSubmitError(getArabicErrorMessage(error)); }
+    try {
+      const application = {
+        ...values,
+        planType,
+        senderAccountName: values.senderAccountName.trim() || undefined,
+        referenceNumber: values.referenceNumber.trim() || undefined,
+        ...(isTrial ? {} : { receiptData, receiptFileName: receiptFile?.name, receiptMimeType: receiptFile?.type as "image/jpeg" | "image/png" }),
+      };
+      await submitMutation.mutateAsync(application);
+      setSubmitted(true);
+    } catch (error) { setSubmitError(getArabicErrorMessage(error)); }
   };
 
   if (submitted) {
