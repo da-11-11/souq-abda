@@ -120,6 +120,12 @@ export const appRouter = router({
   seller: router({
     submitApplication: publicProcedure.input(applicationInput).mutation(async ({ input, ctx }) => {
       const isFreeTrial = input.planType === "free_trial";
+      if (!isFreeTrial && !input.senderAccountName?.trim()) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "اسم صاحب الحساب المحوّل إجباري للباقة المدفوعة" });
+      }
+      if (!isFreeTrial && !input.receiptData) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "يرجى رفع صورة إيصال التحويل للباقة المدفوعة" });
+      }
       if (isFreeTrial) {
         const settings = await getPlatformSettings();
         const used = await getActiveFreeTrialCount();
