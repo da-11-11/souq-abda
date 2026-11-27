@@ -8,6 +8,7 @@ import SellerLogin from "@/pages/SellerLogin";
 import SellerRegister from "@/pages/SellerRegister";
 import SellerDashboard from "@/pages/SellerDashboard";
 import AdminSellerApplications from "@/pages/AdminSellerApplications";
+import About from "@/pages/About";
 import NotFound from "@/pages/NotFound";
 
 const ADMIN_EMAIL = "dawoodrababh2008@gmail.com";
@@ -39,5 +40,5 @@ function SellerLoginRoute() { return <SellerGate><SellerLogin /></SellerGate>; }
 function SellerDashboardRoute() { return <SellerGate><SellerDashboard /></SellerGate>; }
 
 export default function App() {
-  return <Switch><Route path="/" component={Home}/><Route path="/add-product" component={SellerAddProductRoute}/><Route path="/register-seller" component={SellerRegister}/><Route path="/seller/login" component={SellerLoginRoute}/><Route path="/seller-login" component={SellerLoginRoute}/><Route path="/seller/dashboard" component={SellerDashboardRoute}/><Route path="/seller-dashboard" component={SellerDashboardRoute}/><Route path="/admin/seller-applications" component={AdminRoute}/><Route path="/admin" component={AdminRoute}/><Route component={NotFound}/></Switch>;
+  return <Switch><Route path="/" component={Home}/><Route path="/about" component={About}/><Route path="/add-product" component={SellerAddProductRoute}/><Route path="/register-seller" component={SellerRegister}/><Route path="/seller/login" component={SellerLoginRoute}/><Route path="/seller-login" component={SellerLoginRoute}/><Route path="/seller/dashboard" component={SellerDashboardRoute}/><Route path="/seller-dashboard" component={SellerDashboardRoute}/><Route path="/admin/seller-applications" component={AdminRoute}/><Route path="/admin" component={AdminRoute}/><Route component={NotFound}/></Switch>;
 }

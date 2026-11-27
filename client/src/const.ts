@@ -2,6 +2,12 @@ import { OAUTH_STATE_COOKIE, encodeOAuthState } from "@shared/const";
 
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
+export const WHATSAPP_NUMBER = "962781410388";
+export const WHATSAPP_LOCAL_NUMBER = "0781410388";
+export const CONTACT_EMAIL = "dawoodrababh2008@gmail.com";
+export const INSTAGRAM_URL = "https://www.instagram.com/souq.20.ibda/?fbclid=IwY2xjawV2r8FleHRuA2FlbQIxMQBwZG9mBGJyaWQRMWlyZHp1Nkh1MENjdk1WcThzcnRjBmFwcF9pZAEwAAEf2O3fvHnqb2Nd1__k0Pd_e4LQJ0a5ZUc0poDJF7ImdHf1X303NxtjuvWuM_A_aem_2LYsKpWban5nWFPVpQUQ8w";
+export const FACEBOOK_URL = "https://web.facebook.com/profile.php?id=61591799047035#";
+
 // Start the Manus OAuth login. Call this from an event handler or effect at the
 // moment you want to navigate, e.g. `onClick={() => startLogin()}`.
 //
