@@ -1,7 +1,9 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { desc, eq, or } from "drizzle-orm";
 import { COOKIE_NAME } from "@shared/const";
+import { sellerApplications } from "../drizzle/schema";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
@@ -21,6 +23,7 @@ import {
   listSellerApplications,
   updatePlatformSettings,
   updateSellerApplicationProfile,
+  getDb,
 } from "./db";
 
 const adminPassword = process.env.ADMIN_PANEL_PASSWORD ?? "admin2026";
@@ -99,7 +102,7 @@ export const appRouter = router({
     }),
   }),
   seller: router({
-    submitApplication: publicProcedure.input(applicationInput).mutation(async ({ input }) => {
+    submitApplication: publicProcedure.input(applicationInput).mutation(async ({ input, ctx }) => {
       const isFreeTrial = input.planType === "free_trial";
       if (isFreeTrial) {
         const settings = await getPlatformSettings();
@@ -123,6 +126,8 @@ export const appRouter = router({
         receiptUrl = uploaded.url;
       }
       return createSellerApplication({
+        userId: ctx.user?.id,
+        userEmail: ctx.user?.email ?? undefined,
         fullName: input.fullName,
         projectName: input.projectName,
         whatsapp: input.whatsapp,
@@ -133,7 +138,20 @@ export const appRouter = router({
         senderAccountName: input.senderAccountName || input.fullName,
         referenceNumber: input.referenceNumber,
         trialEndsAt: isFreeTrial ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : undefined,
-      });
+      } as Parameters<typeof createSellerApplication>[0]);
+    }),
+    loginWithAccount: publicProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: "يرجى تسجيل الدخول أولاً" });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "قاعدة البيانات غير متاحة حالياً" });
+      const conditions = [eq(sellerApplications.userId, ctx.user.id)];
+      if (ctx.user.email) conditions.push(eq(sellerApplications.userEmail, ctx.user.email));
+      const rows = await db.select().from(sellerApplications).where(or(...conditions)).orderBy(desc(sellerApplications.createdAt)).limit(1);
+      const seller = rows[0];
+      if (!seller || seller.status !== "approved" || !seller.accessToken) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "لا يوجد متجر مفعّل مرتبط بهذا الحساب" });
+      }
+      return seller;
     }),
     login: publicProcedure.input(z.object({ accessToken: z.string().trim().min(4).max(32) })).query(async ({ input }) => {
       const seller = await getSellerApplicationByToken(input.accessToken.toUpperCase());

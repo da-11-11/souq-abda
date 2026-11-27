@@ -30,6 +30,8 @@ export const platformSettings = mysqlTable("platform_settings", {
 
 export const sellerApplications = mysqlTable("seller_applications", {
   id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  userEmail: varchar("userEmail", { length: 320 }),
   fullName: varchar("fullName", { length: 160 }).notNull(),
   projectName: varchar("projectName", { length: 160 }).notNull(),
   whatsapp: varchar("whatsapp", { length: 32 }).notNull(),

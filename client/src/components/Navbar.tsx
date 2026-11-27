@@ -6,14 +6,6 @@ import { Button } from "@/components/ui/button";
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const scrollToSellerForm = () => {
-    const el = document.getElementById("seller-form");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth" });
-    }
-    setIsMenuOpen(false);
-  };
-
   return (
     <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
       <div className="container mx-auto px-4 md:px-6 h-20 flex items-center justify-between">
@@ -42,17 +34,12 @@ export function Navbar() {
         {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3">
           <Button asChild variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5">
-            <Link href="/seller-login">دخول البائع</Link>
+            <Link href="/seller/login">دخول البائعين</Link>
           </Button>
           <Button asChild variant="outline" className="rounded-full border-primary/30 px-5 py-5 text-primary hover:bg-primary/5">
             <Link href="/add-product">أضف منتجك</Link>
           </Button>
-          <Button 
-            onClick={scrollToSellerForm}
-            className="rounded-full bg-gradient-to-r from-secondary to-primary text-white font-medium px-6 py-5 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:-translate-y-0.5"
-          >
-            سجل كبائع
-          </Button>
+          <Button asChild className="rounded-full bg-gradient-to-r from-secondary to-primary text-white font-medium px-6 py-5 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all hover:-translate-y-0.5"><Link href="/register-seller">سجّل مشروعك</Link></Button>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -78,17 +65,12 @@ export function Navbar() {
             />
           </div>
           <Button asChild variant="outline" className="w-full rounded-full border-primary/30 py-6 text-lg text-primary">
-            <Link href="/seller-login" onClick={() => setIsMenuOpen(false)}>دخول البائع</Link>
+            <Link href="/seller/login" onClick={() => setIsMenuOpen(false)}>دخول البائعين</Link>
           </Button>
           <Button asChild variant="outline" className="w-full rounded-full border-primary/30 py-6 text-lg text-primary">
             <Link href="/add-product" onClick={() => setIsMenuOpen(false)}>أضف منتجك</Link>
           </Button>
-          <Button 
-            onClick={scrollToSellerForm}
-            className="w-full rounded-full bg-gradient-to-r from-secondary to-primary text-white font-medium py-6 text-lg mt-2"
-          >
-            سجل كبائع
-          </Button>
+          <Button asChild className="w-full rounded-full bg-gradient-to-r from-secondary to-primary text-white font-medium py-6 text-lg mt-2"><Link href="/register-seller" onClick={() => setIsMenuOpen(false)}>سجّل مشروعك</Link></Button>
         </div>
       )}
     </nav>

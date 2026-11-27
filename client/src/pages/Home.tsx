@@ -4,7 +4,6 @@ import { Hero } from "@/components/Hero";
 import { Categories } from "@/components/Categories";
 import { ProductGrid } from "@/components/ProductGrid";
 import { TrustSection } from "@/components/TrustSection";
-import { SellerForm } from "@/components/SellerForm";
 import { Footer } from "@/components/Footer";
 
 export default function Home() {
@@ -21,7 +20,6 @@ export default function Home() {
         />
         <ProductGrid selectedCategory={selectedCategory} />
         <TrustSection />
-        <SellerForm />
       </main>
       <Footer />
     </div>

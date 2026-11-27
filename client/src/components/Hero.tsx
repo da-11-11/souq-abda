@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { assets } from "@/data";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
 
 export function Hero() {
   const scrollToProducts = () => {
@@ -48,12 +49,10 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
           >
-            <Button 
-              onClick={scrollToProducts}
-              className="rounded-full bg-gradient-to-r from-secondary to-primary text-white font-bold text-lg px-10 py-7 shadow-[0_0_40px_rgba(221,107,32,0.3)] hover:shadow-[0_0_60px_rgba(221,107,32,0.5)] transition-all hover:-translate-y-1"
-            >
-              تصفح المنتجات
-            </Button>
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Button onClick={scrollToProducts} className="rounded-full bg-gradient-to-r from-secondary to-primary text-white font-bold text-lg px-10 py-7 shadow-[0_0_40px_rgba(221,107,32,0.3)] hover:shadow-[0_0_60px_rgba(221,107,32,0.5)] transition-all hover:-translate-y-1">تصفح المنتجات</Button>
+              <Button asChild variant="outline" className="rounded-full border-white/50 bg-white/10 px-8 py-7 text-lg font-bold text-white hover:bg-white/20"><Link href="/register-seller">انضم كبائع</Link></Button>
+            </div>
           </motion.div>
         </motion.div>
       </div>
